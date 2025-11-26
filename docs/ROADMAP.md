@@ -1,212 +1,385 @@
 # RoboTrade - Roadmap
 
+Roadmap de desenvolvimento do RoboTrade - trading bot automatizado em Rust + Tauri + React.
+
 ## Visão Geral
 
-Este documento descreve o roadmap de desenvolvimento do RoboTrade, um robô de trading automatizado focado em criptomoedas.
+O RoboTrade é desenvolvido em fases incrementais, cada uma adicionando funcionalidades completas e testadas.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           ROADMAP                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Phase 1: Foundation          Phase 2: Trading        Phase 3: UI  │
+│  ═══════════════════          ══════════════════      ════════════ │
+│  ✓ Core types                 □ Order execution       □ Dashboard  │
+│  ✓ Database schema            □ Position tracking     □ Charts     │
+│  ✓ Config system              □ Risk management       □ Settings   │
+│  ✓ Binance client             □ Paper trading         □ Alerts     │
+│  □ Market data                □ Strategy engine       □ History    │
+│                                                                     │
+│  Phase 4: Advanced            Phase 5: Polish         Phase 6:     │
+│  ════════════════════         ═══════════════════     Production   │
+│  □ Backtesting                □ Performance           ════════════ │
+│  □ Optimization               □ Documentation         □ Security   │
+│  □ Multiple strategies        □ Error handling        □ Deployment │
+│  □ Portfolio mgmt             □ Notifications         □ Updates    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Fase 1: Fundação (Atual)
+## Phase 1: Foundation ✓ (Em Progresso)
 
-### ✅ Concluído
-- [x] Estrutura do workspace Rust com múltiplos crates
-- [x] Crate `core` com entidades, erros e traits
-- [x] Crate `infra` com configuração, logging e SQLite
-- [x] Provider Fear & Greed Index (alternative.me)
+**Objetivo**: Estabelecer a base do sistema com tipos, infraestrutura e conexões básicas.
 
-### 🔄 Em Progresso
-- [ ] Provider Binance Futures (testnet)
-- [ ] Gateway de exchange com abstração
+### Concluído ✓
 
-### 📋 Pendente
-- [ ] Setup Tauri com System Tray
-- [ ] Scheduler de coleta de dados
-- [ ] Motor de backtest
-- [ ] Estratégia Fear & Greed
-- [ ] Frontend React + Tailwind + shadcn/ui
+- [x] Estrutura do workspace Cargo
+- [x] Tipos core (Candlestick, Order, Position, etc.)
+- [x] Traits fundamentais (ExchangeGateway, Repository, Strategy)
+- [x] Sistema de erros com thiserror
+- [x] Schema do banco de dados SQLite
+- [x] Migrations com sqlx
+- [x] Sistema de configuração TOML
+- [x] Cliente Binance básico (REST)
+- [x] Estrutura de documentação completa
 
----
+### Pendente
 
-## Fase 2: Exchanges e Histórico
+- [ ] Provider Fear & Greed Index funcional
+- [ ] Testes unitários do core
+- [ ] Cache em memória para market data
+- [ ] Rate limiter para API calls
+- [ ] WebSocket Binance para streams
 
-### Binance Futures
-- [ ] Conexão com API REST (testnet e produção)
-- [ ] WebSocket para dados em tempo real
-- [ ] **Importação de histórico completo de trades**
-  - Puxar todos os trades históricos da conta
-  - Calcular P&L por período (dia, semana, mês, ano)
-  - Visualização de perdas e ganhos por símbolo
-  - Gráfico de curva de equity histórica
-- [ ] Gestão de posições abertas
-- [ ] Envio e cancelamento de ordens
-- [ ] Suporte a hedge mode
+### Entregáveis
 
-### Kraken Pro Futures
-- [ ] Conexão com API REST
-- [ ] WebSocket para dados em tempo real
-- [ ] **Importação de histórico completo de trades**
-  - Sincronização com histórico de trades
-  - Análise de performance por par
-  - Relatório de fees pagos
-  - Identificação de trades perdedores
-- [ ] Gestão de posições
-- [ ] Suporte a ordens condicionais
-
-### Análise de Histórico
-- [ ] Dashboard unificado de P&L (todas as exchanges)
-- [ ] Filtros por período, símbolo, lado (long/short)
-- [ ] Exportação para CSV/Excel
-- [ ] Cálculo de impostos (lucro líquido)
-- [ ] Métricas de performance:
-  - Win rate por exchange
-  - Drawdown máximo
-  - Profit factor
-  - Sharpe ratio
-  - Trades mais lucrativos vs mais perdedores
+- Crates `core`, `infra`, `exchange_gateways` funcionais
+- Banco de dados inicializado com migrations
+- Conexão básica com Binance API
+- Suite de testes inicial
 
 ---
 
-## Fase 3: Estratégias Avançadas
+## Phase 2: Trading Engine
 
-### Indicadores Técnicos
-- [ ] RSI (Relative Strength Index)
-- [ ] MACD (Moving Average Convergence Divergence)
-- [ ] Bollinger Bands
-- [ ] EMA/SMA (Médias Móveis)
-- [ ] ATR (Average True Range)
-- [ ] Volume Profile
+**Objetivo**: Implementar execução de ordens e gestão de posições.
 
-### Estratégias
-- [ ] Fear & Greed contrarian (compra medo, vende ganância)
-- [ ] RSI oversold/overbought
-- [ ] Cruzamento de médias
-- [ ] Breakout de Bollinger
-- [ ] DCA (Dollar Cost Averaging) automatizado
-- [ ] Grid trading
+### Tarefas
 
-### Backtesting
-- [ ] Motor de backtest com dados históricos
-- [ ] Simulação de slippage e fees
-- [ ] Otimização de parâmetros
-- [ ] Walk-forward analysis
-- [ ] Monte Carlo simulation
-- [ ] Comparação entre estratégias
+- [ ] Order Manager
+  - [ ] Criar ordens de mercado e limitadas
+  - [ ] Cancelar ordens
+  - [ ] Rastrear status de ordens
+  - [ ] Histórico de ordens
 
----
+- [ ] Position Manager
+  - [ ] Abrir posições
+  - [ ] Fechar posições (total/parcial)
+  - [ ] Calcular P&L
+  - [ ] Stop Loss / Take Profit
 
-## Fase 4: Risk Management
+- [ ] Paper Trading
+  - [ ] Simulador de execução
+  - [ ] Balanço virtual
+  - [ ] Histórico de trades paper
 
-### Gestão de Risco
-- [ ] Limite de posição por símbolo
-- [ ] Limite de risco diário/semanal
-- [ ] Trailing stop automático
-- [ ] Break-even automático
-- [ ] Scaling in/out de posições
-- [ ] Correlação entre posições
+- [ ] Risk Management
+  - [ ] Limites de posição
+  - [ ] Daily loss limit
+  - [ ] Circuit breaker
 
-### Circuit Breakers
-- [ ] Pausa após N perdas consecutivas
-- [ ] Pausa após drawdown percentual
-- [ ] Limite de ordens por minuto
-- [ ] Detecção de volatilidade extrema
-- [ ] Alerta de liquidação próxima
+### Entregáveis
+
+- Crate `trading_worker` funcional
+- Execução de ordens em paper mode
+- Gestão de posições com P&L
+- Sistema básico de risco
 
 ---
 
-## Fase 5: Interface e UX
+## Phase 3: Strategy Engine
 
-### System Tray
-- [ ] Ícone com status (conectado/desconectado)
-- [ ] Menu com posições abertas
-- [ ] P&L do dia em tempo real
-- [ ] Quick actions (pausar trading, fechar posições)
-- [ ] Notificações nativas
+**Objetivo**: Criar sistema de estratégias configuráveis.
 
-### Dashboard Principal
-- [ ] Overview de conta (saldo, P&L, posições)
-- [ ] Gráficos de performance
-- [ ] Lista de sinais ativos
-- [ ] Histórico de trades recentes
-- [ ] Fear & Greed Index atual
+### Tarefas
 
-### Páginas
-- [ ] Estratégias (ativar/desativar, configurar)
-- [ ] Backtest (rodar, comparar resultados)
-- [ ] Histórico (trades, sinais, ordens)
-- [ ] Análise (perdas, ganhos, métricas)
-- [ ] Configurações (API keys, preferências)
+- [ ] Indicadores Técnicos
+  - [ ] SMA, EMA
+  - [ ] RSI
+  - [ ] MACD
+  - [ ] Bollinger Bands
+  - [ ] ATR
+
+- [ ] Strategy Framework
+  - [ ] Trait Strategy
+  - [ ] Avaliação de sinais
+  - [ ] Entry/Exit rules
+  - [ ] Configuração via TOML/JSON
+
+- [ ] Fear & Greed Strategy
+  - [ ] Integração com índice
+  - [ ] Regras de entrada/saída
+  - [ ] Parâmetros configuráveis
+
+- [ ] Strategy Versioning
+  - [ ] Histórico de versões
+  - [ ] Comparação de performance
+  - [ ] Rollback
+
+### Entregáveis
+
+- Crate `analytics` com indicadores
+- Framework de estratégias extensível
+- Fear & Greed strategy implementada
+- Sistema de versionamento
 
 ---
 
-## Fase 6: Recursos Avançados
+## Phase 4: Backtesting
+
+**Objetivo**: Motor de backtesting para validação de estratégias.
+
+### Tarefas
+
+- [ ] Backtest Engine
+  - [ ] Simulador de mercado
+  - [ ] Execução de estratégias em dados históricos
+  - [ ] Cálculo de métricas
+
+- [ ] Métricas
+  - [ ] Total Return
+  - [ ] Sharpe Ratio
+  - [ ] Sortino Ratio
+  - [ ] Max Drawdown
+  - [ ] Win Rate
+  - [ ] Profit Factor
+
+- [ ] Visualização
+  - [ ] Equity curve
+  - [ ] Drawdown chart
+  - [ ] Trade list
+
+- [ ] Otimização
+  - [ ] Grid search de parâmetros
+  - [ ] Walk-forward analysis
+  - [ ] Monte Carlo simulation
+
+### Entregáveis
+
+- Backtest engine completo
+- Suite de métricas de performance
+- API para rodar backtests
+- Relatórios de resultado
+
+---
+
+## Phase 5: User Interface
+
+**Objetivo**: Interface desktop completa com Tauri + React.
+
+### Tarefas
+
+- [ ] Dashboard
+  - [ ] Visão geral do portfolio
+  - [ ] Posições abertas
+  - [ ] Ordens pendentes
+  - [ ] P&L do dia
+
+- [ ] Market Data
+  - [ ] Lista de símbolos
+  - [ ] Gráfico de candlesticks
+  - [ ] Order book (opcional)
+
+- [ ] Trading
+  - [ ] Formulário de ordem
+  - [ ] Confirmação visual
+  - [ ] Histórico de trades
+
+- [ ] Strategies
+  - [ ] Lista de estratégias
+  - [ ] Configuração
+  - [ ] Ativar/desativar
+  - [ ] Performance
+
+- [ ] Settings
+  - [ ] Configuração geral
+  - [ ] API credentials
+  - [ ] Notificações
+  - [ ] Tema (light/dark)
+
+### Entregáveis
+
+- Aplicação Tauri funcional
+- UI React completa
+- Comandos IPC implementados
+- Notificações do sistema
+
+---
+
+## Phase 6: Live Trading
+
+**Objetivo**: Suporte a trading real com todas as salvaguardas.
+
+### Tarefas
+
+- [ ] Live Mode
+  - [ ] Ativação segura
+  - [ ] Confirmações visuais
+  - [ ] Indicadores de modo
+
+- [ ] Security
+  - [ ] Keyring para credentials
+  - [ ] Rate limiting
+  - [ ] IP whitelist reminder
+
+- [ ] Monitoring
+  - [ ] Logs estruturados
+  - [ ] Métricas em tempo real
+  - [ ] Alertas
+
+- [ ] Safeguards
+  - [ ] Limites de perda
+  - [ ] Pausar em erros
+  - [ ] Rollback de estratégia
+
+### Entregáveis
+
+- Modo live funcional e seguro
+- Sistema de alertas
+- Logging completo
+- Documentação de segurança
+
+---
+
+## Phase 7: Polish & Release
+
+**Objetivo**: Preparar para release público.
+
+### Tarefas
+
+- [ ] Performance
+  - [ ] Profiling e otimização
+  - [ ] Redução de memória
+  - [ ] Startup time
+
+- [ ] Quality
+  - [ ] Testes E2E
+  - [ ] Code review completo
+  - [ ] Security audit
+
+- [ ] Documentation
+  - [ ] User guide
+  - [ ] API reference
+  - [ ] FAQ
+
+- [ ] Distribution
+  - [ ] Build para Windows/macOS/Linux
+  - [ ] Auto-updater
+  - [ ] Installer
+
+### Entregáveis
+
+- Aplicação otimizada
+- Testes abrangentes
+- Documentação completa
+- Builds para todas as plataformas
+
+---
+
+## Futuro (Backlog)
+
+Features consideradas para versões futuras:
 
 ### Multi-Exchange
+
+- [ ] Suporte a outras exchanges (Bybit, OKX, Kraken)
 - [ ] Arbitragem entre exchanges
-- [ ] Agregação de orderbook
 - [ ] Smart order routing
-- [ ] Balanceamento de margem
+- [ ] Agregação de orderbook
 
-### Automação
-- [ ] Agendamento de estratégias
-- [ ] Alertas customizados
-- [ ] Webhooks para integração externa
-- [ ] Telegram bot para notificações
+### Advanced Strategies
 
-### Análise Avançada
-- [ ] Machine Learning para predição
-- [ ] Sentiment analysis (Twitter, Reddit)
-- [ ] On-chain metrics (whale movements)
+- [ ] Machine Learning integration
+- [ ] Portfolio rebalancing
+- [ ] Dollar Cost Averaging automático
+- [ ] Grid trading
+- [ ] Sentiment analysis
+
+### Social Features
+
+- [ ] Compartilhar estratégias
+- [ ] Leaderboard
+- [ ] Copy trading
+
+### Mobile & Notifications
+
+- [ ] App iOS/Android (Tauri Mobile)
+- [ ] Notificações push
+- [ ] Telegram bot
+- [ ] Webhooks
+
+### Advanced Analytics
+
+- [ ] On-chain metrics
 - [ ] Funding rate analysis
+- [ ] Whale movements tracking
+- [ ] Correlation analysis
 
 ---
 
-## Fase 7: Produção e Segurança
+## Exchanges Suportadas
 
-### Segurança
-- [ ] Criptografia de API keys (keyring)
-- [ ] Triple-lock para modo live
-- [ ] Audit log de todas as ações
-- [ ] Rate limiting interno
-- [ ] Validação de assinaturas
-
-### Confiabilidade
-- [ ] Reconexão automática
-- [ ] Sincronização de estado
-- [ ] Backup de configurações
-- [ ] Recuperação de falhas
-- [ ] Health checks contínuos
-
-### Monitoramento
-- [ ] Métricas de sistema
-- [ ] Logs estruturados
-- [ ] Alertas de anomalias
-- [ ] Dashboard de operações
-
----
-
-## Notas Técnicas
-
-### Exchanges Suportadas
 | Exchange | Status | Tipo | Prioridade |
 |----------|--------|------|------------|
 | Binance Futures | 🔄 Em desenvolvimento | Perpetual | Alta |
-| Kraken Pro Futures | 📋 Planejado | Perpetual | Alta |
-| Bybit | 📋 Planejado | Perpetual | Média |
+| Binance Spot | 📋 Planejado | Spot | Média |
+| Kraken Pro Futures | 📋 Planejado | Perpetual | Média |
+| Bybit | 📋 Planejado | Perpetual | Baixa |
 | OKX | 📋 Planejado | Perpetual | Baixa |
-
-### Stack Tecnológico
-- **Backend**: Rust (100% da lógica de negócio)
-- **Frontend**: React + TypeScript + Tailwind + shadcn/ui
-- **Desktop**: Tauri 2.0
-- **Database**: SQLite (local)
-- **Async**: Tokio
 
 ---
 
-## Contribuindo
+## Stack Tecnológico
 
-Para contribuir com o projeto, veja [CONTRIBUTING.md](./CONTRIBUTING.md).
+| Camada | Tecnologia | Uso |
+|--------|------------|-----|
+| Backend | Rust 1.75+ | 100% da lógica de negócio |
+| Async Runtime | Tokio | Concorrência |
+| Desktop Framework | Tauri 2.0 | IPC e window management |
+| Frontend | React 18 + TypeScript | Interface do usuário |
+| UI Components | shadcn/ui + Tailwind | Componentes e estilo |
+| Database | SQLite + sqlx | Persistência local |
+| Charts | TradingView Lightweight | Gráficos de mercado |
+| Logging | tracing | Observabilidade |
 
-## Licença
+---
 
-MIT
+## Priorização
+
+As prioridades são definidas por:
+
+1. **Valor para o usuário**: Features que habilitam uso real
+2. **Dependências técnicas**: Ordem lógica de implementação
+3. **Risco**: Features críticas primeiro para validar arquitetura
+4. **Esforço vs. Impacto**: Quick wins quando possível
+
+---
+
+## Como Contribuir
+
+Quer ajudar? Veja:
+
+1. Issues marcadas como `good first issue`
+2. Features no roadmap marcadas como `help wanted`
+3. Documentação e testes sempre bem-vindos
+
+Consulte [Contributing Guide](./development/contributing.md) para detalhes.
+
+---
+
+**Última atualização**: 2024-01
+**Versão do projeto**: 0.1.0
