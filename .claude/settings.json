@@ -1,0 +1,14 @@
+{
+  "includeCoAuthoredBy": false,
+
+  "permissions": {
+    "allow": [
+      "*"
+    ],
+    "defaultMode": "bypassPermissions",
+    "deny": [],
+    "ask": [
+      "Bash(git commit:*)"
+    ]
+  }
+}

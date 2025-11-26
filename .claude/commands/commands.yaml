@@ -1,0 +1,229 @@
+Commands ficam disponíveis para todos os agents (respeitando allowed_commands por agent).
+Cada command tem intenção, execução e sinais de sucesso/falha para o Claude entender contexto.
+
+commands:
+
+name: install
+description: Instala dependências do projeto.
+run: "pnpm install"
+success_patterns:
+
+"added"
+
+"audited"
+fail_patterns:
+
+"ERR!"
+
+"ELIFECYCLE"
+
+name: dev
+description: Sobe o app em modo desenvolvimento (Vite + Tauri).
+run: "pnpm tauri:dev"
+success_patterns:
+
+"Dev server running"
+
+"tauri: Running dev"
+fail_patterns:
+
+"error:"
+
+"EADDRINUSE"
+
+name: build:web
+description: Build apenas do frontend (Vite).
+run: "pnpm build"
+success_patterns:
+
+"built in"
+
+"dist"
+fail_patterns:
+
+"Build failed"
+
+name: build:tauri
+description: Build completo (DMG/.app).
+run: "pnpm tauri:build"
+success_patterns:
+
+".dmg"
+
+"bundle/macos"
+fail_patterns:
+
+"failed to bundle"
+
+"codesign failed"
+
+name: lint
+description: Lint do código.
+run: "pnpm lint"
+success_patterns:
+
+"problems"
+
+"No problems found"
+fail_patterns:
+
+"Parsing error"
+
+name: lint:fix
+description: Lint com correções automáticas.
+run: "pnpm lint:fix"
+success_patterns:
+
+"Fixed"
+
+"problems"
+fail_patterns:
+
+"Parsing error"
+
+name: format
+description: Formata arquivos com Prettier.
+run: "pnpm format"
+success_patterns:
+
+"files"
+
+"code formatted"
+fail_patterns:
+
+"Error"
+
+name: format:check
+description: Checagem de formatação.
+run: "pnpm format:check"
+success_patterns:
+
+"All matched files use Prettier code style"
+fail_patterns:
+
+"Code style issues found"
+
+name: test
+description: Roda todos os testes.
+run: "pnpm test"
+success_patterns:
+
+"passed"
+
+"failed"
+
+"coverage"
+fail_patterns:
+
+"Test failed to run"
+
+name: test:ui
+description: Testes com UI.
+run: "pnpm test:ui"
+success_patterns:
+
+"UI started"
+
+"watching for file changes"
+fail_patterns:
+
+"Error"
+
+name: test:coverage
+description: Cobertura total do projeto.
+run: "pnpm test:coverage"
+success_patterns:
+
+"Coverage"
+
+"Statements"
+fail_patterns:
+
+"Error"
+
+name: test:upload-service
+description: Testes focados no upload service.
+run: "pnpm test src/services/tests/upload.service.test.ts"
+success_patterns:
+
+"passed"
+fail_patterns:
+
+"failed"
+
+name: test:coverage-upload-service
+description: Cobertura específica de upload.service.ts.
+run: "pnpm test --coverage src/services/upload.service.ts"
+success_patterns:
+
+"Coverage"
+
+"Statements"
+fail_patterns:
+
+"Error"
+
+name: repo:map
+description: Gera/imprime o mapa do repositório para navegação do Claude.
+run: "ls -la && echo '--- SRC ---' && tree -L 3 src || true && echo '--- TAURI ---' && tree -L 3 src-tauri || true"
+success_patterns:
+
+"SRC"
+
+"TAURI"
+fail_patterns:
+
+"command not found"
+
+name: release:prepare
+description: Pré-release automática (format:check, lint, test, build:web).
+run: "pnpm format:check && pnpm lint && pnpm test && pnpm build"
+success_patterns:
+
+"All matched files use Prettier code style"
+
+"passed"
+
+"dist"
+fail_patterns:
+
+"failed"
+
+"Build failed"
+
+name: release:build
+description: Build Tauri para distribuição.
+run: "pnpm tauri:build"
+success_patterns:
+
+"bundle/macos"
+
+".dmg"
+fail_patterns:
+
+"codesign failed"
+
+name: release:tag
+description: Gera tag semântica (patch por padrão) e push.
+run: "VERSION=$(node -e "let p=require('./package.json');let v=p.version.split('.');v[2]=(+v[2]+1).toString();p.version=v.join('.');console.log(p.version);require('fs').writeFileSync('package.json', JSON.stringify(p,null,2))") && git add package.json && git commit -m "chore(release): v$VERSION" && git tag v$VERSION && git push && git push --tags"
+success_patterns:
+
+"chore(release)"
+
+"tags"
+fail_patterns:
+
+"error:"
+
+"tag already exists"
+
+name: changelog:update
+description: Atualiza CHANGELOG.md no formato Keep a Changelog (últimos commits).
+run: "echo '## [Unreleased]' > /tmp/_chg && echo >> /tmp/_chg && git log --pretty=format:'- %s (%h)' $(git describe --tags --abbrev=0)..HEAD >> /tmp/_chg && echo >> /tmp/_chg && (grep -q '^## \[Unreleased\]' CHANGELOG.md && awk 'NR==1{print;system("cat /tmp/_chg");next}1' CHANGELOG.md > /tmp/_newchg || (echo '# Changelog' > /tmp/_newchg; cat /tmp/_chg >> /tmp/_newchg; echo >> /tmp/_newchg; cat CHANGELOG.md >> /tmp/_newchg)) && mv /tmp/_newchg CHANGELOG.md"
+success_patterns:
+
+"Unreleased"
+fail_patterns:
+
+"fatal:"
+YAML

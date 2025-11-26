@@ -1,0 +1,44 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Tauri
+src-tauri/target/
+
+# Build artifacts
+dist/
+build/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Credentials and secrets
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Claude local settings (contains user-specific config)
+.claude/settings.local.json
