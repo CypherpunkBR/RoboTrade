@@ -27,6 +27,10 @@ chrono = { workspace = true }
 hmac = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
+base64 = { workspace = true }
+
+# Encoding
+urlencoding = { workspace = true }
 
 # Logging
 tracing = { workspace = true }

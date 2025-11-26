@@ -10,6 +10,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 ### Adicionado
 - Estrutura inicial do workspace Rust com 7 crates
 - Integração com Binance Futures (REST API)
+- **Integração com Kraken Futures (REST API)**
 - Provider Fear & Greed Index (alternative.me)
 - Engine de backtest com simulação de posições
 - Estratégia baseada em Fear & Greed Index
@@ -19,11 +20,21 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Sistema de configuração via TOML
 - Logging estruturado com tracing
 
+### Exchange Gateways
+- **KrakenFuturesClient** para trading de futuros na Kraken
+  - Suporte a ambiente demo (testnet) e produção
+  - Assinatura HMAC-SHA512 para requests autenticados
+  - Métodos: send_order, cancel_order, get_positions, get_balances, get_open_orders
+  - Implementação completa da trait ExchangeGateway
+  - Modelos de dados para: Account, Positions, Orders, Tickers, Candles, Fills
+- Novo ExchangeId::KrakenFutures adicionado ao core
+
 ### Infraestrutura
 - Configuração de ferramentas de qualidade (rustfmt, clippy, cargo-deny)
 - Husky com hooks pre-commit e commit-msg
 - Detecção de código duplicado com jscpd
 - Conventional Commits com commitlint
+- Dependências adicionadas: base64 0.22, urlencoding 2.1
 
 ## [0.1.0] - 2024-11-26
 

@@ -92,6 +92,8 @@ pub enum ExchangeId {
     BinanceFutures,
     /// Binance Spot
     BinanceSpot,
+    /// Kraken Futures
+    KrakenFutures,
     /// OKX
     Okx,
     /// Bybit
@@ -105,6 +107,7 @@ impl fmt::Display for ExchangeId {
         match self {
             ExchangeId::BinanceFutures => write!(f, "binance_futures"),
             ExchangeId::BinanceSpot => write!(f, "binance_spot"),
+            ExchangeId::KrakenFutures => write!(f, "kraken_futures"),
             ExchangeId::Okx => write!(f, "okx"),
             ExchangeId::Bybit => write!(f, "bybit"),
             ExchangeId::Paper => write!(f, "paper"),

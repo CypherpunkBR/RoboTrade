@@ -7,11 +7,16 @@ O crate `robotrade-exchange-gateways` fornece a integração com exchanges de cr
 ```
 crates/exchange_gateways/src/
 ├── lib.rs              # Exportações e re-exportações
-└── binance/            # Cliente Binance Futures
+├── binance/            # Cliente Binance Futures
+│   ├── mod.rs          # Módulo principal
+│   ├── client.rs       # BinanceFuturesClient
+│   ├── models.rs       # Structs de request/response
+│   └── signer.rs       # Assinatura HMAC-SHA256
+└── kraken/             # Cliente Kraken Futures
     ├── mod.rs          # Módulo principal
-    ├── client.rs       # BinanceFuturesClient
+    ├── client.rs       # KrakenFuturesClient
     ├── models.rs       # Structs de request/response
-    └── signer.rs       # Assinatura HMAC-SHA256
+    └── signer.rs       # Assinatura HMAC-SHA512
 ```
 
 ## Binance Futures Client
@@ -209,12 +214,40 @@ pub enum ExchangeError {
 }
 ```
 
-## Exchanges Planejadas
+## Kraken Futures Client
+
+Para documentação completa do cliente Kraken, veja [kraken-futures.md](./kraken-futures.md).
+
+### Resumo
+
+```rust
+use robotrade_exchange_gateways::KrakenFuturesClient;
+
+// Demo (testnet)
+let client = KrakenFuturesClient::demo("api_key", "api_secret");
+
+// Produção
+let client = KrakenFuturesClient::mainnet("api_key", "api_secret");
+```
+
+### URLs de API
+
+| Ambiente | URL Base |
+|----------|----------|
+| Demo | `https://demo-futures.kraken.com` |
+| Produção | `https://futures.kraken.com` |
+
+### Símbolos
+
+- `PI_XBTUSD` - Perpétuo BTC/USD
+- `PI_ETHUSD` - Perpétuo ETH/USD
+
+## Exchanges Implementadas e Planejadas
 
 | Exchange | Status | Prioridade |
 |----------|--------|------------|
 | Binance Futures | ✅ Implementado | - |
-| Kraken Pro Futures | 📋 Planejado | Alta |
+| Kraken Futures | ✅ Implementado | - |
 | Bybit | 📋 Planejado | Média |
 | OKX | 📋 Planejado | Baixa |
 
