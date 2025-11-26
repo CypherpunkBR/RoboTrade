@@ -42,3 +42,10 @@ secrets.json
 
 # Claude local settings (contains user-specific config)
 .claude/settings.local.json
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Reports (generated)
+reports/

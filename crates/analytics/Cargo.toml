@@ -19,6 +19,10 @@ serde_json = { workspace = true }
 # Tipos
 rust_decimal = { workspace = true }
 chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Concurrency
+parking_lot = { workspace = true }
 
 # Logging
 tracing = { workspace = true }

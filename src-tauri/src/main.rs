@@ -1,6 +1,6 @@
 //! RoboTrade - Desktop Trading Robot
 //!
-//! Aplicação Tauri que integra todos os módulos do sistema.
+//! Ponto de entrada da aplicação.
 
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
@@ -8,6 +8,5 @@
 )]
 
 fn main() {
-    // TODO: Implementar aplicação Tauri
-    println!("RoboTrade - Em desenvolvimento");
+    robotrade_app_lib::run();
 }

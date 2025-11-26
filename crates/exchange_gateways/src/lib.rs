@@ -2,9 +2,11 @@
 //!
 //! Gateways para comunicação com exchanges:
 //! - Binance Futures (testnet e produção)
+//! - Kraken Pro Futures (planejado)
 //! - Paper trading (simulação local)
-//! - Abstração de APIs
+//!
+//! Cada gateway implementa a trait `ExchangeGateway` do core.
 
-// TODO: Implementar módulos
-// pub mod binance;
-// pub mod paper;
+pub mod binance;
+
+pub use binance::BinanceFuturesClient;

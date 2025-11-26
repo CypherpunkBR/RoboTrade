@@ -1,0 +1,19 @@
+{
+  "threshold": 5,
+  "reporters": ["console", "json"],
+  "ignore": ["**/target/**", "**/node_modules/**", "**/*.test.rs", "**/tests/**"],
+  "format": ["rust"],
+  "minLines": 5,
+  "minTokens": 50,
+  "maxLines": 500,
+  "maxSize": "100kb",
+  "output": "./reports/jscpd-rust",
+  "formatsExts": {
+    "rust": ["rs"]
+  },
+  "absolute": true,
+  "skipLocal": false,
+  "blame": false,
+  "silent": false,
+  "verbose": false
+}

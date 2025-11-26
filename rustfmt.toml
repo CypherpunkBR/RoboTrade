@@ -1,0 +1,26 @@
+# Rust Formatting Config
+# Reference: https://rust-lang.github.io/rustfmt/
+# STABLE FEATURES ONLY (no nightly required)
+
+# ===== CRITICAL FORMATTING =====
+edition = "2021"
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+
+# ===== STABLE FEATURES =====
+use_field_init_shorthand = true
+use_try_shorthand = true
+force_explicit_abi = true
+reorder_imports = true
+reorder_modules = true
+
+# Note: Many rustfmt features require nightly Rust.
+# The configuration above uses only stable features.
+#
+# To use unstable features, switch to nightly and add:
+# - imports_granularity = "Crate"
+# - group_imports = "StdExternalCrate"
+# - brace_style = "SameLineWhere"
+# - trailing_comma = "Vertical"

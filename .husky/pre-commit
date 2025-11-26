@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-Commit Hook
+# Executa verificações de qualidade antes de cada commit
+#
+# O que é validado:
+# - cargo fmt (formatação)
+# - cargo clippy (linting rigoroso)
+
+echo "Pre-commit: Executando verificacoes de qualidade..."
+
+# Executa lint-staged
+npx lint-staged
+
+# Se lint-staged falhar, aborta commit
+if [ $? -ne 0 ]; then
+  echo "Pre-commit falhou! Corrija os erros acima antes de commitar."
+  exit 1
+fi
+
+echo "Pre-commit: Todas as verificacoes passaram!"

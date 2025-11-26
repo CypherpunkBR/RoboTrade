@@ -5,6 +5,10 @@ edition = "2021"
 description = "RoboTrade - Trading Robot Desktop App"
 license = "MIT"
 
+[lib]
+name = "robotrade_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -13,12 +17,12 @@ tauri-build = { version = "2", features = [] }
 robotrade-core = { path = "../crates/core" }
 robotrade-infra = { path = "../crates/infra" }
 robotrade-market-data = { path = "../crates/market_data" }
-robotrade-analytics = { path = "../crates/analytics" }
-robotrade-trading-worker = { path = "../crates/trading_worker" }
 robotrade-exchange-gateways = { path = "../crates/exchange_gateways" }
 
 # Tauri
 tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-notification = "2"
 
 # Async
 tokio = { workspace = true }
@@ -27,8 +31,17 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
+# Tipos
+rust_decimal = { workspace = true }
+chrono = { workspace = true }
+
 # Logging
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Sync
+parking_lot = { workspace = true }
+once_cell = { workspace = true }
 
 [features]
 default = ["custom-protocol"]

@@ -1,0 +1,31 @@
+# Clippy Configuration - Regras Rigorosas
+# Similar a ESLint/SonarQube para JavaScript
+
+# ===== COMPLEXIDADE E TAMANHO =====
+
+# Complexidade cognitiva máxima: 15
+cognitive-complexity-threshold = 15
+
+# Máximo de linhas por função: 100
+too-many-lines-threshold = 100
+
+# Máximo de argumentos por função: 5
+too-many-arguments-threshold = 5
+
+# ===== OBSERVAÇÕES =====
+
+# Clippy não tem equivalente direto a:
+# - max-lines-per-file (verificar em code review)
+# - max-statements por função
+# - max-nested-callbacks
+#
+# Compensamos com regras rigorosas via flags:
+# cargo clippy -- -D warnings -W clippy::all -W clippy::pedantic -W clippy::nursery -W clippy::cargo
+
+# ===== EXCEÇÕES PERMITIDAS =====
+
+# Permite nomes de variáveis curtos em closures e iteradores
+single-char-binding-names-threshold = 4
+
+# Permite alguns padrões comuns em Rust
+msrv = "1.70.0"
