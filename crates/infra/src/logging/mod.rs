@@ -25,11 +25,8 @@ pub async fn init_logging(config: &LoggingConfig) -> InfraResult<LoggingGuard> {
     let _level = parse_level(&config.level);
 
     // Cria filtro baseado no nível
-    let filter = EnvFilter::try_new(format!(
-        "robotrade={},warn",
-        config.level.to_lowercase()
-    ))
-    .unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter = EnvFilter::try_new(format!("robotrade={},warn", config.level.to_lowercase()))
+        .unwrap_or_else(|_| EnvFilter::new("info"));
 
     // Layer para console com cores
     let console_layer = fmt::layer()

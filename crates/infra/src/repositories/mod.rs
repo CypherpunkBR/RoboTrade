@@ -1,7 +1,7 @@
 //! Implementações de repositórios SQLite
 
-mod fear_greed;
 mod candle;
+mod fear_greed;
 
-pub use fear_greed::*;
 pub use candle::*;
+pub use fear_greed::*;

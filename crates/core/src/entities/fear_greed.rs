@@ -327,8 +327,7 @@ mod tests {
             .map(|i| {
                 FearGreedData::new(
                     30 + i * 5,
-                    NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
-                        + chrono::Duration::days(i as i64),
+                    NaiveDate::from_ymd_opt(2024, 1, 1).unwrap() + chrono::Duration::days(i as i64),
                 )
             })
             .collect();

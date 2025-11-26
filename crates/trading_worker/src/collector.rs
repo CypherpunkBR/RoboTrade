@@ -2,10 +2,10 @@
 //!
 //! Responsável por buscar dados de diferentes fontes e armazenar no banco
 
-use std::sync::Arc;
-use robotrade_core::error::RoboTradeError;
-use robotrade_core::traits::{FearGreedProvider, FearGreedRepository, CandleRepository};
 use robotrade_core::entities::{FearGreedData, TimeFrame};
+use robotrade_core::error::RoboTradeError;
+use robotrade_core::traits::{CandleRepository, FearGreedProvider, FearGreedRepository};
+use std::sync::Arc;
 use tracing::{debug, error, info};
 
 /// Coletor de dados de mercado
@@ -67,14 +67,20 @@ where
         } else {
             // Salva no banco
             self.fear_greed_repo.save(&data).await?;
-            info!("Fear & Greed salvo: {} ({:?})", data.value, data.classification);
+            info!(
+                "Fear & Greed salvo: {} ({:?})",
+                data.value, data.classification
+            );
         }
 
         Ok(data)
     }
 
     /// Coleta histórico do Fear & Greed Index
-    pub async fn collect_fear_greed_history(&self, days: u32) -> Result<Vec<FearGreedData>, RoboTradeError> {
+    pub async fn collect_fear_greed_history(
+        &self,
+        days: u32,
+    ) -> Result<Vec<FearGreedData>, RoboTradeError> {
         info!(days = %days, "Coletando histórico Fear & Greed...");
 
         let history = self.fear_greed_provider.fetch_history(days).await?;

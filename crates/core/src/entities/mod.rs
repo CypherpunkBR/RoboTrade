@@ -4,16 +4,16 @@
 
 mod asset;
 mod candle;
+mod fear_greed;
 mod order;
 mod position;
 mod signal;
 mod trade;
-mod fear_greed;
 
 pub use asset::*;
 pub use candle::*;
+pub use fear_greed::*;
 pub use order::*;
 pub use position::*;
 pub use signal::*;
 pub use trade::*;
-pub use fear_greed::*;

@@ -142,17 +142,11 @@ pub enum OrderSource {
         strategy_id: String,
     },
     /// Criada manualmente pelo usuário
-    Manual {
-        nota: Option<String>,
-    },
+    Manual { nota: Option<String> },
     /// Stop loss de uma posição
-    StopLoss {
-        position_id: Uuid,
-    },
+    StopLoss { position_id: Uuid },
     /// Take profit de uma posição
-    TakeProfit {
-        position_id: Uuid,
-    },
+    TakeProfit { position_id: Uuid },
 }
 
 /// Requisição para criar uma ordem

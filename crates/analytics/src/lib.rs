@@ -6,12 +6,12 @@
 //! - Motor de backtest
 //! - Métricas de performance
 
-pub mod strategies;
 pub mod backtest;
+pub mod strategies;
 
 // Re-exports
-pub use strategies::{Strategy, FearGreedStrategy, fear_greed::FearGreedStrategyConfig};
-pub use backtest::{BacktestEngine, BacktestConfig};
+pub use backtest::{BacktestConfig, BacktestEngine};
+pub use strategies::{fear_greed::FearGreedStrategyConfig, FearGreedStrategy, Strategy};
 
 // TODO: Implementar módulos adicionais
 // pub mod indicators;

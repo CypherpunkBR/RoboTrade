@@ -50,24 +50,19 @@ impl AlternativeMeFearGreedProvider {
 
         debug!(url = %url, "Requisitando Fear & Greed Index");
 
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    MarketDataError::Timeout {
-                        provider: "alternative.me".into(),
-                        reason: e.to_string(),
-                    }
-                } else {
-                    MarketDataError::ProviderUnavailable {
-                        provider: "alternative.me".into(),
-                        reason: e.to_string(),
-                    }
+        let response = self.client.get(&url).send().await.map_err(|e| {
+            if e.is_timeout() {
+                MarketDataError::Timeout {
+                    provider: "alternative.me".into(),
+                    reason: e.to_string(),
                 }
-            })?;
+            } else {
+                MarketDataError::ProviderUnavailable {
+                    provider: "alternative.me".into(),
+                    reason: e.to_string(),
+                }
+            }
+        })?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -79,9 +74,10 @@ impl AlternativeMeFearGreedProvider {
             });
         }
 
-        let api_response: ApiResponse = response.json().await.map_err(|e| {
-            MarketDataError::ParseError(format!("Erro ao parsear resposta: {}", e))
-        })?;
+        let api_response: ApiResponse = response
+            .json()
+            .await
+            .map_err(|e| MarketDataError::ParseError(format!("Erro ao parsear resposta: {}", e)))?;
 
         if api_response.metadata.error.is_some() {
             return Err(MarketDataError::ProviderUnavailable {

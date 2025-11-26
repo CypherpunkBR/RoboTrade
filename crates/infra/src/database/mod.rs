@@ -101,10 +101,11 @@ async fn run_migrations(pool: &DbPool) -> InfraResult<()> {
 
 /// Obtém a versão atual do schema
 async fn get_schema_version(pool: &DbPool) -> InfraResult<i32> {
-    let row: (i32,) = sqlx::query_as("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
-        .fetch_one(pool)
-        .await
-        .map_err(|e| InfraError::Database(format!("Erro ao obter versão: {}", e)))?;
+    let row: (i32,) =
+        sqlx::query_as("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1")
+            .fetch_one(pool)
+            .await
+            .map_err(|e| InfraError::Database(format!("Erro ao obter versão: {}", e)))?;
 
     Ok(row.0)
 }

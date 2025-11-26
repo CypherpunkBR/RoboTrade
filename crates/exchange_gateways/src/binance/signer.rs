@@ -7,8 +7,8 @@ type HmacSha256 = Hmac<Sha256>;
 
 /// Gera assinatura HMAC-SHA256 para a Binance
 pub fn sign(secret: &str, message: &str) -> String {
-    let mut mac =
-        HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC pode aceitar chave de qualquer tamanho");
+    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
+        .expect("HMAC pode aceitar chave de qualquer tamanho");
 
     mac.update(message.as_bytes());
     let result = mac.finalize();

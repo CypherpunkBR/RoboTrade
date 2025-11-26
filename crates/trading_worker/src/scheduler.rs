@@ -94,7 +94,8 @@ impl Scheduler {
         }
 
         info!("Iniciando scheduler...");
-        self.running.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.running
+            .store(true, std::sync::atomic::Ordering::SeqCst);
 
         // Emite evento de início
         let _ = self.event_tx.send(SchedulerEvent::Started);
@@ -142,7 +143,8 @@ impl Scheduler {
         }
 
         info!("Parando scheduler...");
-        self.running.store(false, std::sync::atomic::Ordering::SeqCst);
+        self.running
+            .store(false, std::sync::atomic::Ordering::SeqCst);
 
         // Aguarda todas as tasks terminarem
         for handle in self.handles.drain(..) {
@@ -211,7 +213,8 @@ impl Default for Scheduler {
 impl Drop for Scheduler {
     fn drop(&mut self) {
         // Garante que as tasks são canceladas
-        self.running.store(false, std::sync::atomic::Ordering::SeqCst);
+        self.running
+            .store(false, std::sync::atomic::Ordering::SeqCst);
         for handle in self.handles.drain(..) {
             handle.abort();
         }

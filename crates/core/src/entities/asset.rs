@@ -63,8 +63,7 @@ impl TradingPair {
         let quote_assets = ["USDT", "BUSD", "USDC", "BTC", "ETH"];
 
         for quote in quote_assets {
-            if symbol.ends_with(quote) {
-                let base = &symbol[..symbol.len() - quote.len()];
+            if let Some(base) = symbol.strip_suffix(quote) {
                 if !base.is_empty() {
                     return Some(Self {
                         base: Asset::new(base),

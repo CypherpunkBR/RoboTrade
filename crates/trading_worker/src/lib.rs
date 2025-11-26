@@ -8,12 +8,12 @@
 //! - Risk management
 //! - Circuit breaker
 
-pub mod scheduler;
 pub mod collector;
+pub mod scheduler;
 
 // Re-exports
-pub use scheduler::{Scheduler, SchedulerConfig, SchedulerEvent};
 pub use collector::DataCollector;
+pub use scheduler::{Scheduler, SchedulerConfig, SchedulerEvent};
 
 // TODO: Implementar módulos adicionais
 // pub mod job_queue;

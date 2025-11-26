@@ -4,10 +4,9 @@
 
 use chrono::{DateTime, Utc};
 use robotrade_core::dto::{BacktestResultDto, BacktestTradeDto, EquityPoint};
-use robotrade_core::entities::{Candle, Signal, PositionSide, TimeFrame};
-use robotrade_core::error::RoboTradeError;
+use robotrade_core::entities::{Candle, PositionSide, Signal, TimeFrame};
+use robotrade_core::error::{AnalyticsError, RoboTradeError};
 use rust_decimal::Decimal;
-use rust_decimal::prelude::*;
 use tracing::{debug, info};
 
 use crate::strategies::Strategy;
@@ -132,6 +131,7 @@ impl BacktestEngine {
         strategy: &S,
         candles: &[Candle],
         symbol: &str,
+        timeframe: TimeFrame,
     ) -> Result<BacktestResultDto, RoboTradeError> {
         info!(
             strategy = %strategy.name(),
@@ -142,9 +142,9 @@ impl BacktestEngine {
 
         if candles.is_empty() {
             return Err(RoboTradeError::Analytics(
-                robotrade_core::error::AnalyticsError::StrategyError {
-                    strategy: strategy.name().to_string(),
-                    message: "Sem candles para backtest".to_string(),
+                AnalyticsError::InsufficientDataForCalculation {
+                    calculation: "backtest".to_string(),
+                    min_required: 1,
                 },
             ));
         }
@@ -179,7 +179,7 @@ impl BacktestEngine {
         }
 
         // Calcula métricas
-        let result = self.calculate_metrics(&state, candles, strategy);
+        let result = self.calculate_metrics(&state, candles, strategy, symbol, timeframe);
 
         info!(
             total_trades = %result.total_trades,
@@ -193,23 +193,33 @@ impl BacktestEngine {
     }
 
     /// Verifica condições de saída (SL/TP)
-    fn check_exit_conditions(&self, pos: &SimulatedPosition, candle: &Candle) -> Option<CloseReason> {
+    fn check_exit_conditions(
+        &self,
+        pos: &SimulatedPosition,
+        candle: &Candle,
+    ) -> Option<CloseReason> {
         let is_long = matches!(pos.side, PositionSide::Long);
 
         // Verifica stop loss
         if let Some(sl) = pos.stop_loss {
-            if is_long && candle.low <= sl {
-                return Some(CloseReason::StopLoss);
-            } else if !is_long && candle.high >= sl {
+            let sl_hit = if is_long {
+                candle.low <= sl
+            } else {
+                candle.high >= sl
+            };
+            if sl_hit {
                 return Some(CloseReason::StopLoss);
             }
         }
 
         // Verifica take profit
         if let Some(tp) = pos.take_profit {
-            if is_long && candle.high >= tp {
-                return Some(CloseReason::TakeProfit);
-            } else if !is_long && candle.low <= tp {
+            let tp_hit = if is_long {
+                candle.high >= tp
+            } else {
+                candle.low <= tp
+            };
+            if tp_hit {
                 return Some(CloseReason::TakeProfit);
             }
         }
@@ -218,12 +228,7 @@ impl BacktestEngine {
     }
 
     /// Processa sinal da estratégia
-    fn process_signal(
-        &self,
-        state: &mut BacktestState,
-        signal: &Signal,
-        candle: &Candle,
-    ) {
+    fn process_signal(&self, state: &mut BacktestState, signal: &Signal, candle: &Candle) {
         // Determina o lado baseado na direção do sinal
         let signal_side = match signal.direction {
             robotrade_core::entities::TradeDirection::Long => PositionSide::Long,
@@ -232,11 +237,11 @@ impl BacktestEngine {
 
         // Se já tem posição, verifica se deve fechar
         if let Some(ref pos) = state.position {
-            let should_close = match (signal_side, pos.side) {
-                (PositionSide::Long, PositionSide::Short) => true,
-                (PositionSide::Short, PositionSide::Long) => true,
-                _ => false,
-            };
+            let should_close = matches!(
+                (signal_side, pos.side),
+                (PositionSide::Long, PositionSide::Short)
+                    | (PositionSide::Short, PositionSide::Long)
+            );
 
             if should_close {
                 self.close_position(state, candle, CloseReason::Signal);
@@ -250,12 +255,7 @@ impl BacktestEngine {
     }
 
     /// Abre uma posição
-    fn open_position(
-        &self,
-        state: &mut BacktestState,
-        side: PositionSide,
-        candle: &Candle,
-    ) {
+    fn open_position(&self, state: &mut BacktestState, side: PositionSide, candle: &Candle) {
         let entry_price = candle.close;
 
         // Calcula slippage
@@ -276,21 +276,25 @@ impl BacktestEngine {
         // Calcula SL/TP
         let (stop_loss, take_profit) = match side {
             PositionSide::Long => {
-                let sl = self.config.default_stop_loss_pct.map(|pct| {
-                    adjusted_price * (Decimal::ONE - pct / Decimal::from(100))
-                });
-                let tp = self.config.default_take_profit_pct.map(|pct| {
-                    adjusted_price * (Decimal::ONE + pct / Decimal::from(100))
-                });
+                let sl = self
+                    .config
+                    .default_stop_loss_pct
+                    .map(|pct| adjusted_price * (Decimal::ONE - pct / Decimal::from(100)));
+                let tp = self
+                    .config
+                    .default_take_profit_pct
+                    .map(|pct| adjusted_price * (Decimal::ONE + pct / Decimal::from(100)));
                 (sl, tp)
             }
             PositionSide::Short => {
-                let sl = self.config.default_stop_loss_pct.map(|pct| {
-                    adjusted_price * (Decimal::ONE + pct / Decimal::from(100))
-                });
-                let tp = self.config.default_take_profit_pct.map(|pct| {
-                    adjusted_price * (Decimal::ONE - pct / Decimal::from(100))
-                });
+                let sl = self
+                    .config
+                    .default_stop_loss_pct
+                    .map(|pct| adjusted_price * (Decimal::ONE + pct / Decimal::from(100)));
+                let tp = self
+                    .config
+                    .default_take_profit_pct
+                    .map(|pct| adjusted_price * (Decimal::ONE - pct / Decimal::from(100)));
                 (sl, tp)
             }
         };
@@ -316,12 +320,7 @@ impl BacktestEngine {
     }
 
     /// Fecha uma posição
-    fn close_position(
-        &self,
-        state: &mut BacktestState,
-        candle: &Candle,
-        reason: CloseReason,
-    ) {
+    fn close_position(&self, state: &mut BacktestState, candle: &Candle, reason: CloseReason) {
         let pos = match state.position.take() {
             Some(p) => p,
             None => return,
@@ -404,18 +403,30 @@ impl BacktestEngine {
         state: &BacktestState,
         candles: &[Candle],
         strategy: &S,
+        symbol: &str,
+        _timeframe: TimeFrame,
     ) -> BacktestResultDto {
         let total_trades = state.trades.len() as u32;
-        let winning_trades = state.trades.iter().filter(|t| t.net_pnl > Decimal::ZERO).count() as u32;
-        let _losing_trades = state.trades.iter().filter(|t| t.net_pnl < Decimal::ZERO).count() as u32;
+        let winning_trades = state
+            .trades
+            .iter()
+            .filter(|t| t.net_pnl > Decimal::ZERO)
+            .count() as u32;
+        let _losing_trades = state
+            .trades
+            .iter()
+            .filter(|t| t.net_pnl < Decimal::ZERO)
+            .count() as u32;
 
-        let gross_profit: Decimal = state.trades
+        let gross_profit: Decimal = state
+            .trades
             .iter()
             .filter(|t| t.net_pnl > Decimal::ZERO)
             .map(|t| t.net_pnl)
             .sum();
 
-        let gross_loss: Decimal = state.trades
+        let gross_loss: Decimal = state
+            .trades
             .iter()
             .filter(|t| t.net_pnl < Decimal::ZERO)
             .map(|t| t.net_pnl.abs())
@@ -436,8 +447,7 @@ impl BacktestEngine {
         };
 
         let total_return_pct = if self.config.initial_capital > Decimal::ZERO {
-            (state.capital - self.config.initial_capital)
-                / self.config.initial_capital
+            (state.capital - self.config.initial_capital) / self.config.initial_capital
                 * Decimal::from(100)
         } else {
             Decimal::ZERO
@@ -472,42 +482,53 @@ impl BacktestEngine {
             _ => String::new(),
         };
 
-        let timeframe = candles.first().map(|c| c.timeframe).unwrap_or(TimeFrame::H1);
-
         // Converte trades para DTO
-        let trades_dto: Vec<BacktestTradeDto> = state.trades.iter().map(|t| BacktestTradeDto {
-            entry_date: t.opened_at.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-            exit_date: t.closed_at.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-            side: t.side,
-            entry_price: t.entry_price,
-            exit_price: t.exit_price,
-            pnl_pct: t.pnl_pct,
-        }).collect();
+        let trades_dto: Vec<BacktestTradeDto> = state
+            .trades
+            .iter()
+            .map(|t| BacktestTradeDto {
+                entry_date: t.opened_at.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                exit_date: t.closed_at.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                side: t.side,
+                entry_price: t.entry_price,
+                exit_price: t.exit_price,
+                pnl_pct: t.pnl_pct,
+            })
+            .collect();
 
         // Converte equity curve
-        let equity_curve: Vec<EquityPoint> = state.equity_curve.iter().enumerate().map(|(i, (dt, eq))| {
-            let drawdown = if i > 0 {
-                let max_so_far = state.equity_curve[..=i].iter().map(|(_, e)| *e).max().unwrap_or(*eq);
-                if max_so_far > Decimal::ZERO {
-                    (max_so_far - *eq) / max_so_far * Decimal::from(100)
+        let equity_curve: Vec<EquityPoint> = state
+            .equity_curve
+            .iter()
+            .enumerate()
+            .map(|(i, (dt, eq))| {
+                let drawdown = if i > 0 {
+                    let max_so_far = state.equity_curve[..=i]
+                        .iter()
+                        .map(|(_, e)| *e)
+                        .max()
+                        .unwrap_or(*eq);
+                    if max_so_far > Decimal::ZERO {
+                        (max_so_far - *eq) / max_so_far * Decimal::from(100)
+                    } else {
+                        Decimal::ZERO
+                    }
                 } else {
                     Decimal::ZERO
-                }
-            } else {
-                Decimal::ZERO
-            };
+                };
 
-            EquityPoint {
-                date: dt.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
-                equity: *eq,
-                drawdown,
-            }
-        }).collect();
+                EquityPoint {
+                    date: dt.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                    equity: *eq,
+                    drawdown,
+                }
+            })
+            .collect();
 
         BacktestResultDto {
             id: uuid::Uuid::new_v4().to_string(),
             strategy_id: strategy.name().to_string(),
-            symbol: candles.first().map(|c| format!("{:?}", timeframe)).unwrap_or_default(),
+            symbol: symbol.to_string(),
             period,
             initial_capital: self.config.initial_capital,
             final_capital: state.capital,
@@ -569,8 +590,6 @@ mod tests {
             let low = price.min(new_price) * dec!(0.995);
 
             candles.push(Candle {
-                symbol: "BTCUSDT".to_string(),
-                timeframe: TimeFrame::H1,
                 open_time: base_time + chrono::Duration::hours(i as i64),
                 close_time: base_time + chrono::Duration::hours((i + 1) as i64),
                 open: price,
@@ -578,8 +597,8 @@ mod tests {
                 low,
                 close: new_price,
                 volume: dec!(1000),
-                quote_volume: dec!(1000) * new_price,
-                trades_count: 100,
+                quote_volume: Some(dec!(1000) * new_price),
+                trade_count: Some(100),
             });
 
             price = new_price;
@@ -595,7 +614,10 @@ mod tests {
         let strategy = MockStrategy::new("NoSignal", vec![]);
 
         let candles = create_test_candles(100, dec!(50000));
-        let result = engine.run(&strategy, &candles, "BTCUSDT").await.unwrap();
+        let result = engine
+            .run(&strategy, &candles, "BTCUSDT", TimeFrame::H1)
+            .await
+            .unwrap();
 
         assert_eq!(result.total_trades, 0);
         assert_eq!(result.final_capital, result.initial_capital);
@@ -607,7 +629,7 @@ mod tests {
         let engine = BacktestEngine::new(config);
         let strategy = MockStrategy::new("Test", vec![]);
 
-        let result = engine.run(&strategy, &[], "BTCUSDT").await;
+        let result = engine.run(&strategy, &[], "BTCUSDT", TimeFrame::H1).await;
         assert!(result.is_err());
     }
 }

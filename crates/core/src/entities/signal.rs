@@ -93,35 +93,20 @@ pub enum SignalStatus {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SignalType {
     /// Cruzamento de médias móveis
-    MACrossover {
-        fast_period: u32,
-        slow_period: u32,
-    },
+    MACrossover { fast_period: u32, slow_period: u32 },
     /// RSI em zona de sobrevenda/sobrecompra
-    RSI {
-        period: u32,
-        threshold: Decimal,
-    },
+    RSI { period: u32, threshold: Decimal },
     /// Rompimento de Bollinger Bands
-    BollingerBreakout {
-        period: u32,
-        std_dev: Decimal,
-    },
+    BollingerBreakout { period: u32, std_dev: Decimal },
     /// Baseado no Fear & Greed Index
-    FearGreed {
-        index_value: u8,
-        threshold: u8,
-    },
+    FearGreed { index_value: u8, threshold: u8 },
     /// Sinal composto (múltiplos indicadores)
     Composite {
         rule_id: String,
         components: Vec<String>,
     },
     /// Sinal manual/customizado
-    Custom {
-        name: String,
-        description: String,
-    },
+    Custom { name: String, description: String },
 }
 
 /// Sinal de trading gerado por uma estratégia
@@ -173,6 +158,7 @@ pub struct Signal {
 
 impl Signal {
     /// Cria um novo sinal
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         strategy_id: impl Into<String>,
         strategy_name: impl Into<String>,

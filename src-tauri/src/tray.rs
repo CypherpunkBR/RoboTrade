@@ -13,14 +13,17 @@ pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), Box<dyn std::error::Er
 
     // Cria itens do menu
     let show_item = MenuItem::with_id(app, "show", "Mostrar RoboTrade", true, None::<&str>)?;
-    let status_item = MenuItem::with_id(app, "status", "Status: Paper Trading", false, None::<&str>)?;
+    let status_item =
+        MenuItem::with_id(app, "status", "Status: Paper Trading", false, None::<&str>)?;
     let separator1 = MenuItem::with_id(app, "sep1", "──────────────", false, None::<&str>)?;
     let pnl_item = MenuItem::with_id(app, "pnl", "P&L Hoje: $0.00", false, None::<&str>)?;
     let positions_item = MenuItem::with_id(app, "positions", "Posições: 0", false, None::<&str>)?;
-    let fear_greed_item = MenuItem::with_id(app, "fear_greed", "Fear & Greed: --", false, None::<&str>)?;
+    let fear_greed_item =
+        MenuItem::with_id(app, "fear_greed", "Fear & Greed: --", false, None::<&str>)?;
     let separator2 = MenuItem::with_id(app, "sep2", "──────────────", false, None::<&str>)?;
     let pause_item = MenuItem::with_id(app, "pause", "Pausar Trading", true, None::<&str>)?;
-    let close_all_item = MenuItem::with_id(app, "close_all", "Fechar Posições", true, None::<&str>)?;
+    let close_all_item =
+        MenuItem::with_id(app, "close_all", "Fechar Posições", true, None::<&str>)?;
     let separator3 = MenuItem::with_id(app, "sep3", "──────────────", false, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
 

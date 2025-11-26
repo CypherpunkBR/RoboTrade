@@ -4,9 +4,8 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use reqwest::Client;
 use robotrade_core::entities::{
-    Balance, Candle, ExchangeId, Order, OrderId, OrderRequest, OrderSide, OrderSource,
-    OrderStatus, OrderType, Position, PositionId, PositionSide, PositionStatus,
-    TimeInForce,
+    Balance, Candle, ExchangeId, Order, OrderId, OrderRequest, OrderSide, OrderSource, OrderStatus,
+    OrderType, Position, PositionId, PositionSide, PositionStatus, TimeInForce,
 };
 use robotrade_core::error::{ExchangeError, ExchangeResult};
 use robotrade_core::traits::ExchangeGateway;
@@ -534,7 +533,13 @@ impl BinanceFuturesClient {
 
         loop {
             let records = self
-                .get_income_history(symbol, Some("REALIZED_PNL"), current_start, None, Some(limit))
+                .get_income_history(
+                    symbol,
+                    Some("REALIZED_PNL"),
+                    current_start,
+                    None,
+                    Some(limit),
+                )
                 .await?;
 
             if records.is_empty() {
@@ -592,7 +597,10 @@ impl BinanceFuturesClient {
             }
 
             // P&L por símbolo
-            *stats.pnl_by_symbol.entry(record.symbol.clone()).or_insert(Decimal::ZERO) += pnl;
+            *stats
+                .pnl_by_symbol
+                .entry(record.symbol.clone())
+                .or_insert(Decimal::ZERO) += pnl;
         }
 
         // Busca fees separadamente
@@ -781,14 +789,20 @@ impl BinanceFuturesClient {
             side,
             order_type,
             quantity: Decimal::from_str(&bo.orig_qty).unwrap_or(Decimal::ZERO),
-            price: Decimal::from_str(&bo.price).ok().filter(|p| *p != Decimal::ZERO),
-            stop_price: Decimal::from_str(&bo.stop_price).ok().filter(|p| *p != Decimal::ZERO),
+            price: Decimal::from_str(&bo.price)
+                .ok()
+                .filter(|p| *p != Decimal::ZERO),
+            stop_price: Decimal::from_str(&bo.stop_price)
+                .ok()
+                .filter(|p| *p != Decimal::ZERO),
             stop_loss: None,
             take_profit: None,
             time_in_force: TimeInForce::GTC,
             status,
             filled_quantity: Decimal::from_str(&bo.executed_qty).unwrap_or(Decimal::ZERO),
-            average_fill_price: Decimal::from_str(&bo.avg_price).ok().filter(|p| *p != Decimal::ZERO),
+            average_fill_price: Decimal::from_str(&bo.avg_price)
+                .ok()
+                .filter(|p| *p != Decimal::ZERO),
             source: OrderSource::Manual { nota: None },
             error_message: None,
             created_at: Utc::now(),

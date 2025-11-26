@@ -3,15 +3,18 @@
 //! Compra quando o mercado está em "Extreme Fear" e vende quando está em "Extreme Greed"
 
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use robotrade_core::entities::{
-    Candle, FearGreedData, Signal, SignalStrength, SignalStatus, SignalType, TradeDirection,
+    Candle, FearGreedData, Signal, SignalStrength, SignalType, TradeDirection,
 };
 use robotrade_core::error::RoboTradeError;
 use std::sync::Arc;
-use parking_lot::RwLock;
 use tracing::{debug, info};
 
 use super::Strategy;
+
+/// Símbolo padrão para sinais quando não especificado
+const DEFAULT_SYMBOL: &str = "BTCUSDT";
 
 /// Configuração da estratégia Fear & Greed
 #[derive(Debug, Clone)]
@@ -187,7 +190,7 @@ impl Strategy for FearGreedStrategy {
             return Ok(Some(Signal::new(
                 "fear_greed_v1",
                 "Fear & Greed Strategy",
-                candle.symbol.clone(),
+                DEFAULT_SYMBOL,
                 SignalType::FearGreed {
                     index_value: value,
                     threshold: self.config.buy_threshold,
@@ -195,7 +198,10 @@ impl Strategy for FearGreedStrategy {
                 TradeDirection::Long,
                 strength,
                 candle.close,
-                format!("Medo extremo detectado: {} ({:?})", value, fear_greed.classification),
+                format!(
+                    "Medo extremo detectado: {} ({:?})",
+                    value, fear_greed.classification
+                ),
             )));
         }
 
@@ -228,7 +234,7 @@ impl Strategy for FearGreedStrategy {
             return Ok(Some(Signal::new(
                 "fear_greed_v1",
                 "Fear & Greed Strategy",
-                candle.symbol.clone(),
+                DEFAULT_SYMBOL,
                 SignalType::FearGreed {
                     index_value: value,
                     threshold: self.config.sell_threshold,
@@ -236,7 +242,10 @@ impl Strategy for FearGreedStrategy {
                 TradeDirection::Short,
                 strength,
                 candle.close,
-                format!("Ganância extrema detectada: {} ({:?})", value, fear_greed.classification),
+                format!(
+                    "Ganância extrema detectada: {} ({:?})",
+                    value, fear_greed.classification
+                ),
             )));
         }
 
@@ -257,13 +266,10 @@ impl Strategy for FearGreedStrategy {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use robotrade_core::entities::{FearGreedClassification, TimeFrame};
     use rust_decimal_macros::dec;
 
-    fn create_test_candle(symbol: &str, price: rust_decimal::Decimal) -> Candle {
+    fn create_test_candle(_symbol: &str, price: rust_decimal::Decimal) -> Candle {
         Candle {
-            symbol: symbol.to_string(),
-            timeframe: TimeFrame::H1,
             open_time: Utc::now(),
             close_time: Utc::now(),
             open: price,
@@ -271,17 +277,13 @@ mod tests {
             low: price * dec!(0.99),
             close: price,
             volume: dec!(1000),
-            quote_volume: dec!(1000) * price,
-            trades_count: 100,
+            quote_volume: Some(dec!(1000) * price),
+            trade_count: Some(100),
         }
     }
 
     fn create_fear_greed(value: u8) -> FearGreedData {
-        FearGreedData {
-            value,
-            classification: FearGreedClassification::from_value(value),
-            collected_at: Utc::now(),
-        }
+        FearGreedData::new(value, Utc::now().date_naive())
     }
 
     #[tokio::test]

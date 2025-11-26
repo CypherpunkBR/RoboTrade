@@ -178,7 +178,7 @@ impl TimeFrame {
     }
 
     /// Cria TimeFrame a partir de string
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "1m" => Some(TimeFrame::M1),
             "3m" => Some(TimeFrame::M3),
@@ -197,6 +197,14 @@ impl TimeFrame {
             "1mo" | "1month" => Some(TimeFrame::Mo1),
             _ => None,
         }
+    }
+}
+
+impl std::str::FromStr for TimeFrame {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s).ok_or_else(|| format!("TimeFrame inválido: {}", s))
     }
 }
 

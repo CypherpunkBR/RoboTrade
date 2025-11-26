@@ -1,8 +1,8 @@
 //! Comandos Tauri para comunicação com o frontend
 
 use robotrade_core::dto::{
-    ConnectionStatus, DashboardSummary, FearGreedDto, OrderDto, PositionDto, ServiceStatus,
-    TradingMode, TradeDto, CreateOrderRequest,
+    ConnectionStatus, CreateOrderRequest, DashboardSummary, FearGreedDto, OrderDto, PositionDto,
+    ServiceStatus, TradeDto, TradingMode,
 };
 use robotrade_infra::AppConfig;
 use rust_decimal::Decimal;
@@ -112,7 +112,9 @@ pub async fn get_connection_status(state: State<'_, AppState>) -> CommandResult<
 
 /// Retorna Fear & Greed Index atual
 #[tauri::command]
-pub async fn get_fear_greed_current(state: State<'_, AppState>) -> CommandResult<Option<FearGreedDto>> {
+pub async fn get_fear_greed_current(
+    state: State<'_, AppState>,
+) -> CommandResult<Option<FearGreedDto>> {
     debug!("Buscando Fear & Greed atual...");
 
     let fear_greed = state.fear_greed();
@@ -277,10 +279,7 @@ pub async fn get_trading_mode(state: State<'_, AppState>) -> CommandResult<Tradi
 
 /// Define modo de trading
 #[tauri::command]
-pub async fn set_trading_mode(
-    state: State<'_, AppState>,
-    mode: TradingMode,
-) -> CommandResult<()> {
+pub async fn set_trading_mode(state: State<'_, AppState>, mode: TradingMode) -> CommandResult<()> {
     info!(mode = ?mode, "Alterando modo de trading...");
 
     // Se mudando para Live, requer confirmação adicional

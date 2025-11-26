@@ -9,8 +9,8 @@ cognitive-complexity-threshold = 15
 # Máximo de linhas por função: 100
 too-many-lines-threshold = 100
 
-# Máximo de argumentos por função: 5
-too-many-arguments-threshold = 5
+# Máximo de argumentos por função: 7 (financeiro precisa de mais campos)
+too-many-arguments-threshold = 7
 
 # ===== OBSERVAÇÕES =====
 

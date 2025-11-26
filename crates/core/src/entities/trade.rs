@@ -101,6 +101,7 @@ pub struct Trade {
 
 impl Trade {
     /// Cria um novo trade a partir de uma posição fechada
+    #[allow(clippy::too_many_arguments)]
     pub fn from_closed_position(
         exchange: ExchangeId,
         symbol: String,
@@ -360,11 +361,7 @@ mod tests {
             exit_order_id: OrderId::new(),
             quantity: dec!(0.1),
             entry_price: dec!(40000),
-            exit_price: if is_winning {
-                dec!(41000)
-            } else {
-                dec!(39000)
-            },
+            exit_price: if is_winning { dec!(41000) } else { dec!(39000) },
             gross_pnl: net_pnl + dec!(5),
             total_fees: dec!(5),
             net_pnl,

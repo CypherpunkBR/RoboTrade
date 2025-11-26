@@ -8,8 +8,8 @@
 //!
 //! Este crate não possui dependências de outros crates internos.
 
-pub mod entities;
 pub mod dto;
+pub mod entities;
 pub mod error;
 pub mod traits;
 

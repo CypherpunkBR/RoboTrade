@@ -8,8 +8,8 @@ use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
 
 use crate::entities::{
-    Balance, Candle, ExchangeId, FearGreedData, Order, OrderId, OrderRequest, Position,
-    PositionId, Signal, SignalId, TimeFrame, Ticker, Trade, TradeId,
+    Balance, Candle, ExchangeId, FearGreedData, Order, OrderId, OrderRequest, Position, PositionId,
+    Signal, SignalId, Ticker, TimeFrame, Trade, TradeId,
 };
 use crate::error::{ExchangeResult, InfraResult, MarketDataResult};
 
@@ -158,8 +158,12 @@ pub trait CandleRepository: Send + Sync {
     ) -> InfraResult<Vec<Candle>>;
 
     /// Salva candles
-    async fn save_candles(&self, symbol: &str, timeframe: TimeFrame, candles: &[Candle])
-        -> InfraResult<()>;
+    async fn save_candles(
+        &self,
+        symbol: &str,
+        timeframe: TimeFrame,
+        candles: &[Candle],
+    ) -> InfraResult<()>;
 
     /// Retorna o último candle salvo
     async fn get_last_candle(

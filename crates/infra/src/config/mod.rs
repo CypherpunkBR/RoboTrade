@@ -38,7 +38,7 @@ pub fn logs_path() -> PathBuf {
 }
 
 /// Configuração principal do RoboTrade
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AppConfig {
     /// Configurações gerais
     #[serde(default)]
@@ -65,19 +65,6 @@ pub struct AppConfig {
     pub exchange: ExchangeConfig,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            general: GeneralConfig::default(),
-            trading: TradingConfig::default(),
-            data_collection: DataCollectionConfig::default(),
-            notifications: NotificationConfig::default(),
-            logging: LoggingConfig::default(),
-            exchange: ExchangeConfig::default(),
-        }
-    }
-}
-
 impl AppConfig {
     /// Carrega configuração do arquivo ou cria padrão
     pub async fn load() -> InfraResult<Self> {
@@ -85,12 +72,13 @@ impl AppConfig {
 
         if config_path.exists() {
             debug!("Carregando configuração de {:?}", config_path);
-            let content = fs::read_to_string(&config_path).await.map_err(|e| {
-                InfraError::Configuration {
-                    key: "config_file".into(),
-                    reason: format!("Erro ao ler arquivo: {}", e),
-                }
-            })?;
+            let content =
+                fs::read_to_string(&config_path)
+                    .await
+                    .map_err(|e| InfraError::Configuration {
+                        key: "config_file".into(),
+                        reason: format!("Erro ao ler arquivo: {}", e),
+                    })?;
 
             let config: Self = toml::from_str(&content).map_err(|e| InfraError::Configuration {
                 key: "config_file".into(),
