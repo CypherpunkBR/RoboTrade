@@ -1,0 +1,35 @@
+[package]
+name = "robotrade-app"
+version = "0.1.0"
+edition = "2021"
+description = "RoboTrade - Trading Robot Desktop App"
+license = "MIT"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Crates internas
+robotrade-core = { path = "../crates/core" }
+robotrade-infra = { path = "../crates/infra" }
+robotrade-market-data = { path = "../crates/market_data" }
+robotrade-analytics = { path = "../crates/analytics" }
+robotrade-trading-worker = { path = "../crates/trading_worker" }
+robotrade-exchange-gateways = { path = "../crates/exchange_gateways" }
+
+# Tauri
+tauri = { version = "2", features = ["tray-icon"] }
+
+# Async
+tokio = { workspace = true }
+
+# Serialização
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

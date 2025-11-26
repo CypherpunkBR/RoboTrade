@@ -1,0 +1,34 @@
+# robotrade-core
+# Entidades de domínio, DTOs, erros e traits fundamentais
+# Este crate NÃO tem dependências internas - é a base de tudo
+
+[package]
+name = "robotrade-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Serialização
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Erros
+thiserror = { workspace = true }
+
+# Matemática decimal
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
+
+# Data e hora
+chrono = { workspace = true }
+
+# IDs únicos
+uuid = { workspace = true }
+
+# Async traits
+async-trait = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
