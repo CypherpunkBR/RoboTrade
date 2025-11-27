@@ -1,0 +1,231 @@
+# RoboTrade - Arquivo de Configuração de Exemplo
+# Copie este arquivo para ~/.config/robotrade/config.toml (Linux)
+# ou ~/Library/Application Support/br.cypherpunk.robotrade/config.toml (macOS)
+# ou %APPDATA%\cypherpunk\robotrade\config.toml (Windows)
+
+# =============================================================================
+# Configurações Gerais
+# =============================================================================
+[general]
+# Nome da aplicação
+app_name = "RoboTrade"
+
+# Versão atual
+version = "0.1.0"
+
+# Ambiente: "development" | "staging" | "production"
+environment = "development"
+
+# =============================================================================
+# Configurações de Trading
+# =============================================================================
+[trading]
+# Modo de trading: "paper" (simulação) | "live" (real)
+# IMPORTANTE: Sempre comece com "paper" para testar estratégias
+mode = "paper"
+
+# Alavancagem padrão para novos trades (1-125)
+default_leverage = 10
+
+# Número máximo de posições abertas simultaneamente
+max_open_positions = 3
+
+# Risco máximo por trade em porcentagem do capital (ex: "2.0" = 2%)
+risk_per_trade_pct = "2.0"
+
+# Limite de perda diária em porcentagem (circuit breaker)
+# Trading é pausado automaticamente se atingir este limite
+daily_loss_limit_pct = "5.0"
+
+# Perdas consecutivas antes de pausar trading
+max_consecutive_losses = 5
+
+# =============================================================================
+# Configurações de Coleta de Dados
+# =============================================================================
+[data_collection]
+# Habilitar coleta de Fear & Greed Index
+fear_greed_enabled = true
+
+# Intervalo de coleta do Fear & Greed em segundos (3600 = 1 hora)
+fear_greed_interval_secs = 3600
+
+# Símbolos para coleta de candles
+candles_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+# Timeframes para coleta de candles
+# Opções: "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "1w"
+candles_timeframes = ["1h", "4h", "1d"]
+
+# Intervalo de atualização de preços em segundos
+prices_interval_secs = 5
+
+# Intervalo de verificação de posições em segundos
+positions_interval_secs = 10
+
+# Intervalo de execução de estratégias em segundos
+strategies_interval_secs = 60
+
+# =============================================================================
+# Configurações de Exchange - Binance
+# =============================================================================
+[exchange.binance]
+# Usar testnet da Binance (true para testes, false para produção)
+testnet = true
+
+# API Key - NUNCA commit suas chaves reais!
+# Preferência: Use variáveis de ambiente BINANCE_API_KEY e BINANCE_API_SECRET
+# api_key = ""
+# api_secret = ""
+
+# Timeout de requisições em segundos
+timeout_secs = 30
+
+# Janela de recebimento em milissegundos (recvWindow)
+recv_window_ms = 5000
+
+# =============================================================================
+# Configurações de Exchange - Kraken Futures
+# =============================================================================
+[exchange.kraken]
+# Usar ambiente demo da Kraken (true para testes, false para produção)
+demo = true
+
+# API Key - NUNCA commit suas chaves reais!
+# Preferência: Use variáveis de ambiente KRAKEN_API_KEY e KRAKEN_API_SECRET
+# api_key = ""
+# api_secret = ""
+
+# Timeout de requisições em segundos
+timeout_secs = 30
+
+# =============================================================================
+# Configurações de Notificações
+# =============================================================================
+[notifications]
+# Habilitar notificações do sistema
+enabled = true
+
+# Notificar quando ordem for executada
+on_order_filled = true
+
+# Notificar quando posição for fechada
+on_position_closed = true
+
+# Notificar quando stop-loss for atingido
+on_stop_loss = true
+
+# Notificar quando take-profit for atingido
+on_take_profit = true
+
+# Notificar quando circuit breaker for ativado
+on_circuit_breaker = true
+
+# Notificar alertas de Fear & Greed Index
+on_fear_greed_extreme = true
+
+# =============================================================================
+# Configurações de Logging
+# =============================================================================
+[logging]
+# Nível de log: "trace" | "debug" | "info" | "warn" | "error"
+level = "info"
+
+# Formato de log: "pretty" (colorido) | "json" (estruturado)
+format = "pretty"
+
+# Salvar logs em arquivo
+file_enabled = true
+
+# Diretório de logs (deixe vazio para usar padrão do sistema)
+# file_path = ""
+
+# Rotação de logs: número máximo de arquivos
+max_files = 7
+
+# Tamanho máximo de cada arquivo de log em MB
+max_file_size_mb = 10
+
+# =============================================================================
+# Configurações de Banco de Dados
+# =============================================================================
+[database]
+# Caminho do banco SQLite (deixe vazio para usar padrão do sistema)
+# path = ""
+
+# Número máximo de conexões no pool
+max_connections = 5
+
+# Timeout de conexão em segundos
+connect_timeout_secs = 30
+
+# =============================================================================
+# Configurações de Backtest
+# =============================================================================
+[backtest]
+# Capital inicial para simulações
+initial_capital = "10000.0"
+
+# Taxa de comissão por trade (ex: "0.001" = 0.1%)
+commission_rate = "0.001"
+
+# Slippage estimado (ex: "0.0005" = 0.05%)
+slippage = "0.0005"
+
+# Alavancagem para backtests
+leverage = 10
+
+# =============================================================================
+# Configurações de Estratégias
+# =============================================================================
+[strategies.fear_greed]
+# Habilitar estratégia Fear & Greed
+enabled = false
+
+# Threshold de medo extremo para entrada (0-100)
+fear_threshold = 25
+
+# Threshold de ganância extrema para saída (0-100)
+greed_threshold = 75
+
+# Porcentagem do capital a usar por entrada
+position_size_pct = "10.0"
+
+# Stop-loss em porcentagem
+stop_loss_pct = "5.0"
+
+# Take-profit em porcentagem
+take_profit_pct = "15.0"
+
+# =============================================================================
+# Configurações de Risk Management
+# =============================================================================
+[risk]
+# Drawdown máximo permitido antes de pausar trading
+max_drawdown_pct = "20.0"
+
+# Número máximo de trades por dia
+max_trades_per_day = 10
+
+# Intervalo mínimo entre trades em minutos
+min_trade_interval_mins = 5
+
+# Habilitar trailing stop automático
+trailing_stop_enabled = false
+
+# Distância do trailing stop em porcentagem
+trailing_stop_distance_pct = "2.0"
+
+# =============================================================================
+# Variáveis de Ambiente Recomendadas
+# =============================================================================
+# As seguintes variáveis de ambiente podem ser usadas em vez de
+# configurar chaves diretamente neste arquivo:
+#
+# BINANCE_API_KEY      - Chave API da Binance
+# BINANCE_API_SECRET   - Secret API da Binance
+# KRAKEN_API_KEY       - Chave API da Kraken
+# KRAKEN_API_SECRET    - Secret API da Kraken
+# ROBOTRADE_CONFIG     - Caminho alternativo para este arquivo
+# ROBOTRADE_DATA       - Caminho alternativo para dados
+# RUST_LOG             - Nível de log (substitui logging.level)

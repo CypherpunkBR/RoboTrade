@@ -7,36 +7,9 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Não Lançado]
 
-### Adicionado
-- Estrutura inicial do workspace Rust com 7 crates
-- Integração com Binance Futures (REST API)
-- **Integração com Kraken Futures (REST API)**
-- Provider Fear & Greed Index (alternative.me)
-- Engine de backtest com simulação de posições
-- Estratégia baseada em Fear & Greed Index
-- Scheduler para coleta periódica de dados
-- Aplicação desktop Tauri com system tray
-- Banco de dados SQLite com schema completo
-- Sistema de configuração via TOML
-- Logging estruturado com tracing
+_Nenhuma mudança ainda._
 
-### Exchange Gateways
-- **KrakenFuturesClient** para trading de futuros na Kraken
-  - Suporte a ambiente demo (testnet) e produção
-  - Assinatura HMAC-SHA512 para requests autenticados
-  - Métodos: send_order, cancel_order, get_positions, get_balances, get_open_orders
-  - Implementação completa da trait ExchangeGateway
-  - Modelos de dados para: Account, Positions, Orders, Tickers, Candles, Fills
-- Novo ExchangeId::KrakenFutures adicionado ao core
-
-### Infraestrutura
-- Configuração de ferramentas de qualidade (rustfmt, clippy, cargo-deny)
-- Husky com hooks pre-commit e commit-msg
-- Detecção de código duplicado com jscpd
-- Conventional Commits com commitlint
-- Dependências adicionadas: base64 0.22, urlencoding 2.1
-
-## [0.1.0] - 2024-11-26
+## [0.1.0] - 2024-11-27
 
 ### Adicionado
 
@@ -54,9 +27,14 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 #### Exchange Gateways (`robotrade-exchange-gateways`)
 - Cliente Binance Futures completo
-- Suporte a testnet e mainnet
-- Assinatura HMAC-SHA256 para requests autenticados
-- Métodos: submit_order, cancel_order, get_positions, get_balances, set_leverage
+  - Suporte a testnet e mainnet
+  - Assinatura HMAC-SHA256 para requests autenticados
+  - Métodos: submit_order, cancel_order, get_positions, get_balances, set_leverage
+- Cliente Kraken Futures completo
+  - Suporte a ambiente demo e produção
+  - Assinatura HMAC-SHA512 para requests autenticados
+  - Métodos: send_order, cancel_order, get_positions, get_balances, get_open_orders
+  - Implementação completa da trait ExchangeGateway
 
 #### Market Data (`robotrade-market-data`)
 - Provider Fear & Greed Index (alternative.me API)
@@ -88,6 +66,14 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - System tray com ações show/hide e quit
 - Plugins: shell, notification
 
+### Infraestrutura de Qualidade
+- Configuração de ferramentas de qualidade (rustfmt, clippy, cargo-deny)
+- Husky com hooks pre-commit e commit-msg
+- Detecção de código duplicado com jscpd
+- Conventional Commits com commitlint
+- Arquivo de configuração de exemplo (config.example.toml)
+- Variáveis de ambiente documentadas (.env.example)
+
 ### Dependências
 - tokio 1.35 (runtime assíncrono)
 - sqlx 0.7 (SQLite)
@@ -95,3 +81,5 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - rust_decimal 1.33 (precisão financeira)
 - tracing 0.1 (logging estruturado)
 - tauri 2.0 (desktop app)
+- base64 0.22 (encoding)
+- urlencoding 2.1 (URL encoding)
