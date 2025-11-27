@@ -6,6 +6,9 @@
 mod client;
 mod models;
 mod signer;
+mod websocket;
 
 pub use client::KrakenFuturesClient;
 pub use models::*;
+pub use signer::KrakenSigner;
+pub use websocket::*;

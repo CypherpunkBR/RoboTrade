@@ -141,7 +141,8 @@ pub struct BinanceOrder {
     pub avg_price: String,
     pub orig_qty: String,
     pub executed_qty: String,
-    pub cum_qty: String,
+    #[serde(default)]
+    pub cum_qty: Option<String>,
     pub cum_quote: String,
     #[serde(rename = "type")]
     pub order_type: String,
@@ -155,6 +156,14 @@ pub struct BinanceOrder {
     pub working_type: String,
     pub price_protect: bool,
     pub update_time: i64,
+    #[serde(default)]
+    pub time: Option<i64>,
+    #[serde(default)]
+    pub price_match: Option<String>,
+    #[serde(default)]
+    pub self_trade_prevention_mode: Option<String>,
+    #[serde(default)]
+    pub good_till_date: Option<i64>,
 }
 
 /// Trade histórico do usuário

@@ -1,1 +1,51 @@
-npx commitlint --edit "$1"
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Commit-Msg Hook
+# Valida mensagem de commit seguindo Conventional Commits
+#
+# Formato esperado: <type>(<scope>): <subject>
+#
+# Exemplos válidos:
+# - feat(upload): adiciona suporte a vídeos 4K
+# - fix(monitor): corrige memory leak no scan periódico
+# - perf(upload): otimiza chunks de multipart upload
+#
+# Exemplos inválidos:
+# - Update code (sem type)
+# - feat: Add feature (subject deve ser lowercase)
+# - fix(upload). corrige bug (termina com ponto)
+
+echo "📝 Validando mensagem de commit..."
+
+# Executa commitlint
+pnpm commitlint --edit "$1"
+
+# Se commitlint falhar, aborta commit
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Mensagem de commit inválida!"
+  echo ""
+  echo "Formato esperado: <type>(<scope>): <subject>"
+  echo ""
+  echo "Types válidos:"
+  echo "  feat      Nova funcionalidade"
+  echo "  fix       Correção de bug"
+  echo "  docs      Documentação"
+  echo "  style     Formatação"
+  echo "  refactor  Refatoração"
+  echo "  perf      Melhoria de performance"
+  echo "  test      Testes"
+  echo "  build     Build/dependências"
+  echo "  ci        CI/CD"
+  echo "  chore     Outras mudanças"
+  echo ""
+  echo "Exemplos:"
+  echo "  feat(upload): adiciona suporte a vídeos 4K"
+  echo "  fix(monitor): corrige memory leak"
+  echo "  perf(upload): otimiza multipart"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Mensagem de commit válida!"

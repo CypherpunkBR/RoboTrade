@@ -6,6 +6,8 @@
 mod client;
 mod models;
 mod signer;
+mod websocket;
 
 pub use client::BinanceFuturesClient;
 pub use models::*;
+pub use websocket::*;

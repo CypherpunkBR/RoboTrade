@@ -1,0 +1,234 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # ==========================================
+  # Job 1: Lint e Format Check
+  # ==========================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+  # ==========================================
+  # Job 2: Testes Unitários
+  # ==========================================
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # Evita timeout de 6 horas (esperado: 5-10 minutos)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: NODE_OPTIONS="--max-old-space-size=4096" pnpm test --run --reporter=verbose
+
+      - name: Generate coverage
+        run: NODE_OPTIONS="--max-old-space-size=4096" pnpm test:coverage
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+
+  # ==========================================
+  # Job 3: Testes de Performance
+  # ==========================================
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # Evita timeout de 6 horas (esperado: 3-5 minutos)
+    needs: [test] # Roda após testes (sequencial, não paralelo)
+    if: github.event_name == 'pull_request' # Roda apenas em PRs para economizar CI
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run benchmarks
+        run: NODE_OPTIONS="--max-old-space-size=4096" pnpm test:bench
+        continue-on-error: true
+
+      - name: Comment PR with benchmark results
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('benchmark-results.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📊 Benchmark Results\n\n\`\`\`\n${output}\n\`\`\``
+            });
+
+  # ==========================================
+  # Job 4: Build
+  # ==========================================
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+  # ==========================================
+  # Job 5: Rust (Tauri Backend)
+  # ==========================================
+  rust:
+    name: Rust Checks
+    runs-on: ubuntu-latest # Mudado de macOS para Linux (10x mais barato)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          targets: x86_64-unknown-linux-gnu # Linux target
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Rust format check
+        run: cd src-tauri && cargo fmt -- --check
+
+      - name: Rust clippy
+        run: cd src-tauri && cargo clippy -- -D warnings
+
+      - name: Rust build check
+        run: cd src-tauri && cargo check
+
+      - name: Rust tests
+        run: cd src-tauri && cargo test
+
+  # ==========================================
+  # Job 6: Security Audit
+  # ==========================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run npm audit
+        run: pnpm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Rust security audit
+        run: cd src-tauri && cargo audit
+        continue-on-error: true
+
+  # ==========================================
+  # Status Check (Requer todos os jobs)
+  # ==========================================
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, rust]
+
+    steps:
+      - name: All checks passed
+        run: echo "✅ All quality gates passed!"

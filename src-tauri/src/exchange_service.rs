@@ -17,6 +17,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock as TokioRwLock;
 use tracing::{debug, info, warn};
 
 /// Tipo de exchange ativo
@@ -38,8 +39,8 @@ pub struct ExchangeCredentials {
 /// Serviço de exchange com suporte a múltiplas exchanges
 pub struct ExchangeService {
     paper_client: PaperTradingClient,
-    binance_client: Arc<RwLock<Option<BinanceFuturesClient>>>,
-    kraken_client: Arc<RwLock<Option<KrakenFuturesClient>>>,
+    binance_client: Arc<TokioRwLock<Option<BinanceFuturesClient>>>,
+    kraken_client: Arc<TokioRwLock<Option<KrakenFuturesClient>>>,
     active_exchange: Arc<RwLock<ActiveExchange>>,
 }
 
@@ -48,33 +49,33 @@ impl ExchangeService {
     pub fn new() -> Self {
         Self {
             paper_client: PaperTradingClient::new(),
-            binance_client: Arc::new(RwLock::new(None)),
-            kraken_client: Arc::new(RwLock::new(None)),
+            binance_client: Arc::new(TokioRwLock::new(None)),
+            kraken_client: Arc::new(TokioRwLock::new(None)),
             active_exchange: Arc::new(RwLock::new(ActiveExchange::Paper)),
         }
     }
 
-    /// Inicializa a exchange Binance com credenciais
-    pub fn initialize_binance(&self, credentials: ExchangeCredentials) {
+    /// Inicializa a exchange Binance com credenciais (async)
+    pub async fn initialize_binance_async(&self, credentials: ExchangeCredentials) {
         let client = if credentials.is_testnet {
             BinanceFuturesClient::testnet(credentials.api_key, credentials.api_secret)
         } else {
             BinanceFuturesClient::mainnet(credentials.api_key, credentials.api_secret)
         };
 
-        *self.binance_client.write() = Some(client);
+        *self.binance_client.write().await = Some(client);
         info!(testnet = credentials.is_testnet, "Cliente Binance Futures inicializado");
     }
 
-    /// Inicializa a exchange Kraken com credenciais
-    pub fn initialize_kraken(&self, credentials: ExchangeCredentials) {
+    /// Inicializa a exchange Kraken com credenciais (async)
+    pub async fn initialize_kraken_async(&self, credentials: ExchangeCredentials) {
         let client = if credentials.is_testnet {
             KrakenFuturesClient::demo(credentials.api_key, credentials.api_secret)
         } else {
             KrakenFuturesClient::mainnet(credentials.api_key, credentials.api_secret)
         };
 
-        *self.kraken_client.write() = Some(client);
+        *self.kraken_client.write().await = Some(client);
         info!(demo = credentials.is_testnet, "Cliente Kraken Futures inicializado");
     }
 
@@ -94,14 +95,16 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.ping().await.is_ok(),
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
                     client.ping().await.is_ok()
                 } else {
                     false
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
                     client.ping().await.is_ok()
                 } else {
                     false
@@ -111,13 +114,13 @@ impl ExchangeService {
     }
 
     /// Verifica se Binance está inicializada
-    pub fn is_binance_initialized(&self) -> bool {
-        self.binance_client.read().is_some()
+    pub async fn is_binance_initialized(&self) -> bool {
+        self.binance_client.read().await.is_some()
     }
 
     /// Verifica se Kraken está inicializada
-    pub fn is_kraken_initialized(&self) -> bool {
-        self.kraken_client.read().is_some()
+    pub async fn is_kraken_initialized(&self) -> bool {
+        self.kraken_client.read().await.is_some()
     }
 
     /// Envia uma ordem
@@ -125,8 +128,10 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.submit_order(request).await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.submit_order(request).await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    // Use trait method which returns core::Order
+                    ExchangeGateway::submit_order(client, request).await
                 } else {
                     Err(ExchangeError::ApiError {
                         exchange: "binance".into(),
@@ -136,8 +141,9 @@ impl ExchangeService {
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
-                    client.submit_order(request).await
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::submit_order(client, request).await
                 } else {
                     Err(ExchangeError::ApiError {
                         exchange: "kraken".into(),
@@ -154,8 +160,9 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.cancel_order(order_id).await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.cancel_order(order_id).await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::cancel_order(client, order_id).await
                 } else {
                     Err(ExchangeError::ApiError {
                         exchange: "binance".into(),
@@ -165,8 +172,9 @@ impl ExchangeService {
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
-                    client.cancel_order(order_id).await
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::cancel_order(client, order_id).await
                 } else {
                     Err(ExchangeError::ApiError {
                         exchange: "kraken".into(),
@@ -183,15 +191,17 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.get_open_orders(symbol).await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.get_open_orders(symbol).await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_open_orders(client, symbol).await
                 } else {
                     Ok(vec![])
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
-                    client.get_open_orders(symbol).await
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_open_orders(client, symbol).await
                 } else {
                     Ok(vec![])
                 }
@@ -204,15 +214,17 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.get_positions().await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.get_positions().await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_positions(client).await
                 } else {
                     Ok(vec![])
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
-                    client.get_positions().await
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_positions(client).await
                 } else {
                     Ok(vec![])
                 }
@@ -230,18 +242,24 @@ impl ExchangeService {
         }
 
         // Binance positions
-        if let Some(ref client) = *self.binance_client.read() {
-            match client.get_positions().await {
-                Ok(positions) => all_positions.extend(positions),
-                Err(e) => warn!("Erro ao buscar posições Binance: {}", e),
+        {
+            let guard = self.binance_client.read().await;
+            if let Some(ref client) = *guard {
+                match ExchangeGateway::get_positions(client).await {
+                    Ok(positions) => all_positions.extend(positions),
+                    Err(e) => warn!("Erro ao buscar posições Binance: {}", e),
+                }
             }
         }
 
         // Kraken positions
-        if let Some(ref client) = *self.kraken_client.read() {
-            match client.get_positions().await {
-                Ok(positions) => all_positions.extend(positions),
-                Err(e) => warn!("Erro ao buscar posições Kraken: {}", e),
+        {
+            let guard = self.kraken_client.read().await;
+            if let Some(ref client) = *guard {
+                match ExchangeGateway::get_positions(client).await {
+                    Ok(positions) => all_positions.extend(positions),
+                    Err(e) => warn!("Erro ao buscar posições Kraken: {}", e),
+                }
             }
         }
 
@@ -258,18 +276,24 @@ impl ExchangeService {
         }
 
         // Binance orders
-        if let Some(ref client) = *self.binance_client.read() {
-            match client.get_open_orders(None).await {
-                Ok(orders) => all_orders.extend(orders),
-                Err(e) => warn!("Erro ao buscar ordens Binance: {}", e),
+        {
+            let guard = self.binance_client.read().await;
+            if let Some(ref client) = *guard {
+                match ExchangeGateway::get_open_orders(client, None).await {
+                    Ok(orders) => all_orders.extend(orders),
+                    Err(e) => warn!("Erro ao buscar ordens Binance: {}", e),
+                }
             }
         }
 
         // Kraken orders
-        if let Some(ref client) = *self.kraken_client.read() {
-            match client.get_open_orders(None).await {
-                Ok(orders) => all_orders.extend(orders),
-                Err(e) => warn!("Erro ao buscar ordens Kraken: {}", e),
+        {
+            let guard = self.kraken_client.read().await;
+            if let Some(ref client) = *guard {
+                match ExchangeGateway::get_open_orders(client, None).await {
+                    Ok(orders) => all_orders.extend(orders),
+                    Err(e) => warn!("Erro ao buscar ordens Kraken: {}", e),
+                }
             }
         }
 
@@ -281,15 +305,17 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.get_balances().await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.get_balances().await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_balances(client).await
                 } else {
                     Ok(vec![])
                 }
             }
             ActiveExchange::KrakenFutures => {
-                if let Some(ref client) = *self.kraken_client.read() {
-                    client.get_balances().await
+                let guard = self.kraken_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::get_balances(client).await
                 } else {
                     Ok(vec![])
                 }
@@ -307,16 +333,22 @@ impl ExchangeService {
         }
 
         // Binance balances
-        if let Some(ref client) = *self.binance_client.read() {
-            if let Ok(b) = client.get_balances().await {
-                balances.insert("binance".to_string(), b);
+        {
+            let guard = self.binance_client.read().await;
+            if let Some(ref client) = *guard {
+                if let Ok(b) = ExchangeGateway::get_balances(client).await {
+                    balances.insert("binance".to_string(), b);
+                }
             }
         }
 
         // Kraken balances
-        if let Some(ref client) = *self.kraken_client.read() {
-            if let Ok(b) = client.get_balances().await {
-                balances.insert("kraken".to_string(), b);
+        {
+            let guard = self.kraken_client.read().await;
+            if let Some(ref client) = *guard {
+                if let Ok(b) = ExchangeGateway::get_balances(client).await {
+                    balances.insert("kraken".to_string(), b);
+                }
             }
         }
 
@@ -328,8 +360,9 @@ impl ExchangeService {
         match self.active_exchange() {
             ActiveExchange::Paper => self.paper_client.set_leverage(symbol, leverage).await,
             ActiveExchange::BinanceFutures => {
-                if let Some(ref client) = *self.binance_client.read() {
-                    client.set_leverage(symbol, leverage).await
+                let guard = self.binance_client.read().await;
+                if let Some(ref client) = *guard {
+                    ExchangeGateway::set_leverage(client, symbol, leverage).await
                 } else {
                     Err(ExchangeError::ApiError {
                         exchange: "binance".into(),
@@ -662,8 +695,8 @@ mod tests {
         let service = ExchangeService::new();
 
         // Inicialmente não tem exchanges reais
-        assert!(!service.is_binance_initialized());
-        assert!(!service.is_kraken_initialized());
+        assert!(!service.is_binance_initialized().await);
+        assert!(!service.is_kraken_initialized().await);
         assert_eq!(service.active_exchange(), ActiveExchange::Paper);
     }
 }

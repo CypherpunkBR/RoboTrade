@@ -32,6 +32,10 @@ base64 = { workspace = true }
 # Encoding
 urlencoding = { workspace = true }
 
+# WebSocket
+tokio-tungstenite = { workspace = true }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+
 # Logging
 tracing = { workspace = true }
 

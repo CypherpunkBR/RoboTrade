@@ -837,6 +837,94 @@ impl ExchangeGateway for BinanceFuturesClient {
     }
 }
 
+// ============================================================================
+// Listen Key methods for User Data Stream WebSocket
+// ============================================================================
+
+impl BinanceFuturesClient {
+    /// Creates a new listen key for User Data Stream
+    /// POST /fapi/v1/listenKey
+    pub async fn create_listen_key(&self) -> Result<String, String> {
+        let url = format!("{}/fapi/v1/listenKey", self.base_url);
+
+        let response = self
+            .client
+            .post(&url)
+            .header("X-MBX-APIKEY", &self.api_key)
+            .send()
+            .await
+            .map_err(|e| format!("Erro ao criar listen key: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            return Err(format!("Erro HTTP {}: {}", status, text));
+        }
+
+        #[derive(serde::Deserialize)]
+        struct ListenKeyResponse {
+            #[serde(rename = "listenKey")]
+            listen_key: String,
+        }
+
+        let data: ListenKeyResponse = response
+            .json()
+            .await
+            .map_err(|e| format!("Erro ao parsear listen key: {}", e))?;
+
+        debug!(listen_key = %data.listen_key, "Listen key criado");
+        Ok(data.listen_key)
+    }
+
+    /// Keepalive listen key (should be called every 30 minutes)
+    /// PUT /fapi/v1/listenKey
+    pub async fn keepalive_listen_key(&self, listen_key: &str) -> Result<(), String> {
+        let url = format!("{}/fapi/v1/listenKey", self.base_url);
+
+        let response = self
+            .client
+            .put(&url)
+            .header("X-MBX-APIKEY", &self.api_key)
+            .query(&[("listenKey", listen_key)])
+            .send()
+            .await
+            .map_err(|e| format!("Erro ao renovar listen key: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            return Err(format!("Erro HTTP {}: {}", status, text));
+        }
+
+        debug!("Listen key renovado");
+        Ok(())
+    }
+
+    /// Deletes listen key
+    /// DELETE /fapi/v1/listenKey
+    pub async fn delete_listen_key(&self, listen_key: &str) -> Result<(), String> {
+        let url = format!("{}/fapi/v1/listenKey", self.base_url);
+
+        let response = self
+            .client
+            .delete(&url)
+            .header("X-MBX-APIKEY", &self.api_key)
+            .query(&[("listenKey", listen_key)])
+            .send()
+            .await
+            .map_err(|e| format!("Erro ao deletar listen key: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            return Err(format!("Erro HTTP {}: {}", status, text));
+        }
+
+        debug!("Listen key deletado");
+        Ok(())
+    }
+}
+
 impl BinanceFuturesClient {
     /// Converte ordem da Binance para Order do core
     fn convert_binance_order(&self, bo: &BinanceOrder) -> Order {

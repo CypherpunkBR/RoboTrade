@@ -79,6 +79,7 @@ validator = { version = "0.18", features = ["derive"] }
 
 # Configuração
 config = "0.14"
+dotenvy = "0.15"
 
 # Testes
 mockall = "0.12"

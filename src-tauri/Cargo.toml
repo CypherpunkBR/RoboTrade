@@ -46,6 +46,9 @@ tracing-subscriber = { workspace = true }
 parking_lot = { workspace = true }
 once_cell = { workspace = true }
 
+# Configuração
+dotenvy = { workspace = true }
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]

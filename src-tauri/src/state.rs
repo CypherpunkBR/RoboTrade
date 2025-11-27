@@ -42,6 +42,7 @@ struct AppStateInner {
     daily_pnl: Decimal,
     /// Status das conexões
     binance_connected: bool,
+    kraken_connected: bool,
     fear_greed_api_connected: bool,
     database_connected: bool,
 }
@@ -58,6 +59,7 @@ impl AppState {
                 trades: Vec::new(),
                 daily_pnl: Decimal::ZERO,
                 binance_connected: false,
+                kraken_connected: false,
                 fear_greed_api_connected: false,
                 database_connected: false,
             })),
@@ -173,6 +175,11 @@ impl AppState {
     /// Atualiza status da conexão Binance
     pub fn set_binance_connected(&self, connected: bool) {
         self.inner.write().binance_connected = connected;
+    }
+
+    /// Atualiza status da conexão Kraken
+    pub fn set_kraken_connected(&self, connected: bool) {
+        self.inner.write().kraken_connected = connected;
     }
 
     /// Atualiza status da conexão Fear & Greed API

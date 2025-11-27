@@ -1,1 +1,69 @@
-npx lint-staged
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-Commit Hook
+# Executa lint-staged em arquivos modificados (git add) + validações Rust globais
+#
+# O que é validado:
+# 1. Lint-staged (arquivos staged):
+#    - ESLint (com auto-fix)
+#    - Prettier (formatação)
+#    - Cargo fmt + clippy (apenas arquivos .rs modificados)
+# 2. Validações Rust globais (mesmo sem .rs modificados):
+#    - cargo check (compilação)
+#    - cargo fmt --check (formatação)
+#    - cargo clippy (lints rigorosos)
+#
+# ⏱️  Tempo esperado: ~15-45s (dependendo de mudanças Rust)
+
+echo "🔍 Pre-commit: Executando verificações de qualidade..."
+
+# Executa lint-staged (valida arquivos staged)
+pnpm lint-staged
+
+# Se lint-staged falhar, aborta commit
+if [ $? -ne 0 ]; then
+  echo "❌ Pre-commit falhou! Corrija os erros acima antes de commitar."
+  exit 1
+fi
+
+# ═════════════════════════════════════════════════════════════════
+# Validação Rust Global (rápida, mesmo sem .rs modificados)
+# ═════════════════════════════════════════════════════════════════
+echo ""
+echo "🦀 Validação Rust global (rápida)..."
+
+cd src-tauri || exit 1
+
+# 1. Cargo check (verifica compilação) - ~3-5s
+echo "   • cargo check..."
+cargo check --all-targets --all-features > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "   ❌ Rust compilation errors (run: pnpm rust:check)"
+  cd ..
+  exit 1
+fi
+
+# 2. Cargo fmt --check (verifica formatação) - ~1s
+echo "   • cargo fmt..."
+cargo fmt --all -- --check > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "   ❌ Rust formatting errors (run: pnpm rust:fmt:fix)"
+  cd ..
+  exit 1
+fi
+
+# 3. Cargo clippy (lints rigorosos) - ~10-30s
+echo "   • cargo clippy..."
+cargo clippy --all-targets --all-features -- -D warnings > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "   ❌ Clippy errors/warnings (run: pnpm rust:clippy)"
+  cd ..
+  exit 1
+fi
+
+cd ..
+echo "   ✅ Rust OK"
+
+echo ""
+echo "✅ Pre-commit: Todas as verificações passaram!"

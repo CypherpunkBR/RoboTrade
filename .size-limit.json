@@ -1,0 +1,7 @@
+[
+  {
+    "name": "app bundle",
+    "path": "dist/assets/index-*.js",
+    "limit": "700 kB"
+  }
+]

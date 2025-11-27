@@ -1,0 +1,391 @@
+name: Build Release - Multiplataforma
+
+on:
+  # Executar manualmente
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do release (ex: 2.1.0)'
+        required: true
+        default: '2.1.0'
+  
+  # Ou em push de tags
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  # ============================================
+  # Build para macOS
+  # ============================================
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Build App (Universal Binary)
+        env:
+          NODE_ENV: production
+          VITE_API_URL: https://painel-api.banlek.com/api/
+          VITE_APP_ENV: production
+        run: pnpm tauri build --target universal-apple-darwin
+      
+      - name: Listar artefatos gerados
+        run: |
+          echo "📦 Artefatos macOS:"
+          ls -lh src-tauri/target/universal-apple-darwin/release/bundle/dmg/ || true
+          ls -lh src-tauri/target/universal-apple-darwin/release/bundle/macos/ || true
+      
+      - name: Upload artefatos macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: error
+
+  # ============================================
+  # Build para Windows
+  # ============================================
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Build App
+        env:
+          NODE_ENV: production
+          VITE_API_URL: https://painel-api.banlek.com/api/
+          VITE_APP_ENV: production
+        run: pnpm tauri build --target x86_64-pc-windows-msvc
+      
+      - name: Listar artefatos gerados
+        run: |
+          echo "📦 Artefatos Windows:"
+          dir src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\
+          dir src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\
+        shell: cmd
+      
+      - name: Upload artefatos Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+
+  # ============================================
+  # Build para Microsoft Store (MSIX)
+  # ============================================
+  build-windows-msix:
+    name: Build Windows (MSIX - Microsoft Store)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Build App
+        env:
+          NODE_ENV: production
+          VITE_API_URL: https://painel-api.banlek.com/api/
+          VITE_APP_ENV: production
+        run: pnpm tauri build --target x86_64-pc-windows-msvc
+
+      - name: Verificar AppxManifest.xml
+        shell: pwsh
+        run: |
+          if (!(Test-Path "src-tauri/AppxManifest.xml")) {
+            Write-Error "❌ AppxManifest.xml not found!"
+            exit 1
+          }
+          Write-Host "✓ AppxManifest.xml found"
+
+          # Verificar se ainda tem valores temporários
+          $manifest = Get-Content "src-tauri/AppxManifest.xml" -Raw
+
+          if ($manifest -match 'Publisher="CN=banlek"') {
+            Write-Warning "⚠️ AppxManifest.xml still has temporary Publisher (CN=banlek)"
+          }
+
+          if ($manifest -match 'Name="Banlek.BanlekUploader"') {
+            Write-Warning "⚠️ AppxManifest.xml still has temporary Name"
+          }
+
+      - name: Verificar ícones necessários
+        shell: pwsh
+        run: |
+          $requiredIcons = @(
+            "src-tauri/icons/Square44x44Logo.png",
+            "src-tauri/icons/Square150x150Logo.png",
+            "src-tauri/icons/Wide310x150Logo.png",
+            "src-tauri/icons/StoreLogo.png",
+            "src-tauri/icons/SplashScreen.png"
+          )
+
+          $missingIcons = @()
+          foreach ($icon in $requiredIcons) {
+            if (!(Test-Path $icon)) {
+              $missingIcons += $icon
+            }
+          }
+
+          if ($missingIcons.Count -gt 0) {
+            Write-Warning "⚠️ Missing Microsoft Store icons:"
+            $missingIcons | ForEach-Object { Write-Warning "  - $_" }
+          } else {
+            Write-Host "✓ All Microsoft Store icons present"
+          }
+
+      - name: Preparar estrutura MSIX
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "msix-package/Assets"
+
+          Copy-Item "src-tauri/target/x86_64-pc-windows-msvc/release/Banlek Uploader.exe" "msix-package/"
+          Copy-Item "src-tauri/AppxManifest.xml" "msix-package/"
+          Copy-Item "src-tauri/icons/*.png" "msix-package/Assets/" -ErrorAction SilentlyContinue
+
+          Write-Host "✓ MSIX structure prepared"
+
+      - name: Extrair versão do AppxManifest
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$manifest = Get-Content "src-tauri/AppxManifest.xml"
+          $version = $manifest.Package.Identity.Version
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $version"
+
+      - name: Empacotar MSIX
+        shell: pwsh
+        run: |
+          $makeappx = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter "makeappx.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+
+          if (!$makeappx) {
+            Write-Error "❌ MakeAppx.exe not found"
+            exit 1
+          }
+
+          $outputFile = "BanlekUploader_${{ steps.version.outputs.VERSION }}_x64.msix"
+          & $makeappx.FullName pack /d "msix-package" /p $outputFile /o
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ Failed to package MSIX"
+            exit 1
+          }
+
+          $size = (Get-Item $outputFile).Length / 1MB
+          Write-Host "✓ MSIX packaged: $outputFile ($($size.ToString('F2')) MB)"
+
+      - name: Upload artefatos MSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-build
+          path: BanlekUploader_*.msix
+          if-no-files-found: error
+
+  # ============================================
+  # Build para Linux
+  # ============================================
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04  # Força Ubuntu 22.04 (Tauri ainda não é compatível com 24.04)
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      
+      - name: Instalar dependências do sistema (Ubuntu 24.04)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+      
+      - name: Instalar dependências Node
+        run: pnpm install --frozen-lockfile
+
+      - name: Build App
+        env:
+          NODE_ENV: production
+          VITE_API_URL: https://painel-api.banlek.com/api/
+          VITE_APP_ENV: production
+        run: pnpm tauri build --target x86_64-unknown-linux-gnu
+      
+      - name: Listar artefatos gerados
+        run: |
+          echo "📦 Artefatos Linux:"
+          ls -lh src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/ || true
+          ls -lh src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/ || true
+      
+      - name: Upload artefatos Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+  # ============================================
+  # Criar Release (opcional)
+  # ============================================
+  create-release:
+    name: Criar GitHub Release
+    needs: [build-macos, build-windows, build-windows-msix, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Download todos os artefatos
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Listar todos os artefatos
+        run: |
+          echo "📦 Todos os artefatos baixados:"
+          find ./artifacts -type f
+      
+      - name: Criar Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./artifacts/macos-build/**/*
+            ./artifacts/windows-build/**/*
+            ./artifacts/windows-msix-build/**/*
+            ./artifacts/linux-build/**/*
+          draft: true
+          generate_release_notes: true
+          body: |
+            ## 📦 Downloads
+
+            ### Windows
+            - **MSI/NSIS** - Para instalação tradicional
+            - **MSIX** - Para Microsoft Store (requer upload manual no Partner Center)
+
+            ### macOS
+            - **DMG** - Universal Binary (Apple Silicon + Intel)
+
+            ### Linux
+            - **DEB** - Debian/Ubuntu
+            - **AppImage** - Distribuição universal
+
+            ---
+
+            ### 🏪 Microsoft Store
+            Para publicar na Microsoft Store:
+            1. Baixe o arquivo `.msix`
+            2. Acesse [Partner Center](https://partner.microsoft.com/dashboard)
+            3. Faça upload em **Submissions** → **Packages**
+            4. Preencha Store listings e submit
+
+            📚 Guia completo: [MICROSOFT_STORE_CHECKLIST.md](MICROSOFT_STORE_CHECKLIST.md)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

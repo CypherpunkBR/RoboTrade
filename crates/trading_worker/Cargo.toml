@@ -7,6 +7,7 @@ license = "MIT"
 
 [dependencies]
 robotrade-core = { path = "../core" }
+robotrade-exchange-gateways = { path = "../exchange_gateways" }
 
 # Async
 tokio = { workspace = true }

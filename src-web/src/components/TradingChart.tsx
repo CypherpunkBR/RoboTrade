@@ -67,6 +67,7 @@ export function TradingChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const maSeriesRefs = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
+  const isDisposedRef = useRef(false);
 
   const [selectedInterval, setSelectedInterval] = useState<TimeFrame>(initialInterval);
   const [maConfigs, setMaConfigs] = useState<MovingAverageConfig[]>(DEFAULT_MA_CONFIGS);
@@ -97,6 +98,9 @@ export function TradingChart({
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
+
+    // Reset disposed flag when creating new chart
+    isDisposedRef.current = false;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -143,7 +147,7 @@ export function TradingChart({
 
     // Handle resize
     const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
+      if (!isDisposedRef.current && chartContainerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
         });
@@ -173,14 +177,19 @@ export function TradingChart({
     });
 
     return () => {
+      isDisposedRef.current = true;
       window.removeEventListener('resize', handleResize);
       chart.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+      maSeriesRefs.current.clear();
     };
   }, [onPriceClick]);
 
   // Fetch and update data
   const fetchData = useCallback(async () => {
-    if (!chartRef.current || !candleSeriesRef.current) return;
+    // Skip if chart is disposed or not initialized
+    if (isDisposedRef.current || !chartRef.current || !candleSeriesRef.current) return;
 
     setLoading(true);
     setError(null);
@@ -200,6 +209,11 @@ export function TradingChart({
         enabledSmas.length > 0 ? enabledSmas : undefined,
         enabledEmas.length > 0 ? enabledEmas : undefined
       );
+
+      // Check if chart was disposed during async operation
+      if (isDisposedRef.current || !chartRef.current || !candleSeriesRef.current) {
+        return;
+      }
 
       // Update candles
       const candles = convertCandles(data.candles);
@@ -304,7 +318,7 @@ export function TradingChart({
 
   // Update chart height
   useEffect(() => {
-    if (chartRef.current && chartContainerRef.current) {
+    if (!isDisposedRef.current && chartRef.current && chartContainerRef.current) {
       chartRef.current.applyOptions({
         height: height,
         width: chartContainerRef.current.clientWidth,

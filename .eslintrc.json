@@ -1,0 +1,131 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:sonarjs/recommended-legacy",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
+    "prettier"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module",
+    "project": ["./tsconfig.json"]
+  },
+  "plugins": ["@typescript-eslint", "sonarjs", "no-only-tests", "import"],
+  "settings": {
+    "import/resolver": {
+      "typescript": true,
+      "node": true
+    }
+  },
+  "rules": {
+    // ===== TAMANHO E COMPLEXIDADE (ERROR = TRAVA BUILD) =====
+
+    // Máximo de linhas por função: 100 (anteriormente 80 warn)
+    "max-lines-per-function": [
+      "error",
+      {
+        "max": 100,
+        "skipComments": true,
+        "skipBlankLines": true,
+        "IIFEs": true
+      }
+    ],
+
+    // Máximo de linhas por arquivo: 500
+    "max-lines": [
+      "error",
+      {
+        "max": 500,
+        "skipComments": true,
+        "skipBlankLines": true
+      }
+    ],
+
+    // Complexidade ciclomática máxima: 10 (anteriormente 12 warn)
+    "complexity": ["error", 10],
+
+    // Profundidade máxima de blocos aninhados: 3
+    "max-depth": ["error", 3],
+
+    // Máximo de callbacks aninhados: 3
+    "max-nested-callbacks": ["error", 3],
+
+    // Máximo de parâmetros por função: 5
+    "max-params": ["error", 5],
+
+    // Máximo de statements por função: 30
+    "max-statements": ["error", 30, { "ignoreTopLevelFunctions": false }],
+
+    // ===== SONARJS - COMPLEXIDADE E CODE SMELLS =====
+
+    // Detecta funções cognitivamente complexas (máx: 15)
+    "sonarjs/cognitive-complexity": ["error", 15],
+
+    // Detecta código duplicado (3+ linhas duplicadas)
+    "sonarjs/no-duplicate-string": ["error", 3],
+
+    // Detecta condicionais idênticas
+    "sonarjs/no-identical-conditions": "error",
+    "sonarjs/no-duplicated-branches": "error",
+
+    // Detecta expressões sempre verdadeiras/falsas
+    "sonarjs/no-redundant-boolean": "error",
+
+    // Detecta condicionais invertidas desnecessárias
+    "sonarjs/no-inverted-boolean-check": "error",
+
+    // Detecta funções com muitos returns (máx: 3)
+    "sonarjs/no-small-switch": "off", // Permite switches pequenos
+
+    // ===== IMPORTS E ORGANIZAÇÃO =====
+
+    // Detecta imports não usados
+    "import/no-unused-modules": ["error", { "unusedExports": true }],
+
+    // Detecta imports cíclicos
+    "import/no-cycle": ["error", { "maxDepth": 2 }],
+
+    // Detecta imports duplicados
+    "import/no-duplicates": "error",
+
+    // ===== QUALIDADE GERAL =====
+
+    // Detecta variáveis não usadas
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+
+    // Detecta uso de any (deve ser tipado)
+    "@typescript-eslint/no-explicit-any": "error",
+
+    // Detecta testes com .only (não deve subir para produção)
+    "no-only-tests/no-only-tests": "error",
+
+    // Detecta console.log (usar logger adequado)
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+
+    // Detecta debugger
+    "no-debugger": "error",
+
+    // Detecta código morto
+    "no-unreachable": "error",
+
+    // ===== TYPESCRIPT ESPECÍFICO =====
+
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error"
+  }
+}

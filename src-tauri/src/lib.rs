@@ -23,8 +23,22 @@ use robotrade_market_data::AlternativeMeFearGreedProvider;
 use tauri::Manager;
 use tracing::{error, info, warn};
 
-/// Inicializa exchanges a partir das variáveis de ambiente
-fn initialize_exchanges(app_state: &AppState) {
+/// Carrega variáveis de ambiente do arquivo .env
+fn load_dotenv() {
+    // Tenta carregar o .env do diretório atual ou do diretório pai
+    match dotenvy::dotenv() {
+        Ok(path) => {
+            info!("Arquivo .env carregado de: {:?}", path);
+        }
+        Err(e) => {
+            // Não é erro crítico se não encontrar o arquivo
+            warn!("Não foi possível carregar .env: {} (isso é normal em produção)", e);
+        }
+    }
+}
+
+/// Inicializa exchanges a partir das variáveis de ambiente (async)
+async fn initialize_exchanges(app_state: &AppState) {
     // Binance Futures
     if let (Ok(api_key), Ok(api_secret)) = (
         std::env::var("BINANCE_API_KEY"),
@@ -36,31 +50,32 @@ fn initialize_exchanges(app_state: &AppState) {
                 .unwrap_or(true);
 
             info!(testnet = is_testnet, "Inicializando Binance Futures...");
-            app_state.exchange.initialize_binance(ExchangeCredentials {
+            app_state.exchange.initialize_binance_async(ExchangeCredentials {
                 api_key,
                 api_secret,
                 is_testnet,
-            });
+            }).await;
             app_state.set_binance_connected(true);
         }
     }
 
     // Kraken Futures
     if let (Ok(api_key), Ok(api_secret)) = (
-        std::env::var("KRAKEN_API_KEY"),
-        std::env::var("KRAKEN_API_SECRET"),
+        std::env::var("KRAKEN_FUTURES_API_KEY"),
+        std::env::var("KRAKEN_FUTURES_API_SECRET"),
     ) {
         if !api_key.is_empty() && !api_secret.is_empty() {
-            let is_demo = std::env::var("KRAKEN_DEMO")
+            let is_demo = std::env::var("KRAKEN_FUTURES_DEMO")
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(true);
 
             info!(demo = is_demo, "Inicializando Kraken Futures...");
-            app_state.exchange.initialize_kraken(ExchangeCredentials {
+            app_state.exchange.initialize_kraken_async(ExchangeCredentials {
                 api_key,
                 api_secret,
                 is_testnet: is_demo,
-            });
+            }).await;
+            app_state.set_kraken_connected(true);
         }
     }
 }
@@ -68,6 +83,9 @@ fn initialize_exchanges(app_state: &AppState) {
 /// Configura e executa a aplicação Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Carrega variáveis de ambiente do .env ANTES de inicializar logging
+    load_dotenv();
+
     // Inicializa logging
     tracing_subscriber::fmt()
         .with_env_filter("robotrade=debug,info")
@@ -85,7 +103,10 @@ pub fn run() {
             let app_state = AppState::new();
 
             // Inicializa exchanges a partir de variáveis de ambiente
-            initialize_exchanges(&app_state);
+            let state_for_exchanges = app_state.clone();
+            tauri::async_runtime::spawn(async move {
+                initialize_exchanges(&state_for_exchanges).await;
+            });
 
             // Inicializa banco de dados
             let state_clone = app_state.clone();
