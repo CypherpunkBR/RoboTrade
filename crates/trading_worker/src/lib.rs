@@ -10,13 +10,15 @@
 
 pub mod collector;
 pub mod scheduler;
+pub mod job_queue;
+pub mod position_manager;
+pub mod risk;
+pub mod circuit_breaker;
 
 // Re-exports
 pub use collector::DataCollector;
 pub use scheduler::{Scheduler, SchedulerConfig, SchedulerEvent};
-
-// TODO: Implementar módulos adicionais
-// pub mod job_queue;
-// pub mod position_manager;
-// pub mod risk;
-// pub mod circuit_breaker;
+pub use job_queue::{Job, JobPayload, JobPriority, JobQueue, JobStatus, JobType};
+pub use position_manager::{PositionManager, PositionManagerConfig, PositionEvent};
+pub use risk::{RiskManager, RiskConfig, RiskCheckResult, RiskRejectionReason};
+pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState, CircuitBreakerEvent, FailureType};

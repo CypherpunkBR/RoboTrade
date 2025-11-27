@@ -2,13 +2,25 @@
 
 use parking_lot::RwLock;
 use robotrade_core::dto::TradingMode;
-use robotrade_core::entities::{FearGreedData, Position};
+use robotrade_core::entities::{FearGreedData, Position, Trade};
+use robotrade_core::traits::FearGreedRepository;
+use robotrade_infra::database::DbPool;
+use robotrade_infra::repositories::SqliteFearGreedRepository;
 use rust_decimal::Decimal;
 use std::sync::Arc;
+
+use crate::exchange_service::ExchangeService;
+use crate::trading_worker::TradingWorker;
 
 /// Estado compartilhado da aplicação
 pub struct AppState {
     inner: Arc<RwLock<AppStateInner>>,
+    /// Serviço de exchange
+    pub exchange: ExchangeService,
+    /// Pool do banco de dados
+    db_pool: Arc<RwLock<Option<DbPool>>>,
+    /// Worker de trading
+    pub trading_worker: TradingWorker,
 }
 
 /// Dados internos do estado
@@ -21,6 +33,8 @@ struct AppStateInner {
     fear_greed: Option<FearGreedData>,
     /// Posições abertas em cache
     positions: Vec<Position>,
+    /// Trades do histórico em cache
+    trades: Vec<Trade>,
     /// P&L do dia
     daily_pnl: Decimal,
     /// Status das conexões
@@ -38,12 +52,58 @@ impl AppState {
                 auto_trading_enabled: false,
                 fear_greed: None,
                 positions: Vec::new(),
+                trades: Vec::new(),
                 daily_pnl: Decimal::ZERO,
                 binance_connected: false,
                 fear_greed_api_connected: false,
                 database_connected: false,
             })),
+            exchange: ExchangeService::new(),
+            db_pool: Arc::new(RwLock::new(None)),
+            trading_worker: TradingWorker::new(),
         }
+    }
+
+    /// Define o pool do banco de dados
+    pub fn set_db_pool(&self, pool: DbPool) {
+        *self.db_pool.write() = Some(pool);
+    }
+
+    /// Retorna o repositório Fear & Greed (se disponível)
+    pub fn fear_greed_repository(&self) -> Option<SqliteFearGreedRepository> {
+        self.db_pool
+            .read()
+            .clone()
+            .map(SqliteFearGreedRepository::new)
+    }
+
+    /// Busca histórico do Fear & Greed do banco de dados
+    pub async fn get_fear_greed_history(
+        &self,
+        days: u32,
+    ) -> Result<Vec<FearGreedData>, String> {
+        let repo = self
+            .fear_greed_repository()
+            .ok_or("Banco de dados não conectado")?;
+
+        repo.find_history(days)
+            .await
+            .map_err(|e| format!("Erro ao buscar histórico: {}", e))
+    }
+
+    /// Retorna os trades em cache
+    pub fn trades(&self) -> Vec<Trade> {
+        self.inner.read().trades.clone()
+    }
+
+    /// Atualiza os trades
+    pub fn set_trades(&self, trades: Vec<Trade>) {
+        self.inner.write().trades = trades;
+    }
+
+    /// Adiciona um trade ao histórico
+    pub fn add_trade(&self, trade: Trade) {
+        self.inner.write().trades.push(trade);
     }
 
     /// Retorna o modo de trading atual
@@ -137,6 +197,9 @@ impl Clone for AppState {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
+            exchange: self.exchange.clone(),
+            db_pool: Arc::clone(&self.db_pool),
+            trading_worker: self.trading_worker.clone(),
         }
     }
 }

@@ -324,6 +324,90 @@ impl BinanceFuturesClient {
         Ok(candles)
     }
 
+    /// Busca candles/klines com range de tempo
+    pub async fn get_klines_range(
+        &self,
+        symbol: &str,
+        interval: &str,
+        start_time: Option<i64>,
+        end_time: Option<i64>,
+        limit: Option<u32>,
+    ) -> ExchangeResult<Vec<Candle>> {
+        let limit_str = limit.unwrap_or(1000).to_string();
+        let mut params: Vec<(&str, &str)> = vec![
+            ("symbol", symbol),
+            ("interval", interval),
+            ("limit", &limit_str),
+        ];
+
+        let start_str = start_time.map(|t| t.to_string());
+        let end_str = end_time.map(|t| t.to_string());
+
+        if let Some(ref s) = start_str {
+            params.push(("startTime", s));
+        }
+        if let Some(ref e) = end_str {
+            params.push(("endTime", e));
+        }
+
+        let klines: Vec<Vec<serde_json::Value>> =
+            self.get_public("/fapi/v1/klines", &params).await?;
+
+        let candles = klines
+            .into_iter()
+            .filter_map(|k| self.parse_kline(&k).ok())
+            .collect();
+
+        Ok(candles)
+    }
+
+    /// Busca todo o historico de klines paginando automaticamente
+    /// Binance retorna no maximo 1500 candles por request
+    pub async fn get_all_klines(
+        &self,
+        symbol: &str,
+        interval: &str,
+        start_time: i64,
+        end_time: Option<i64>,
+    ) -> ExchangeResult<Vec<Candle>> {
+        let mut all_candles = Vec::new();
+        let mut current_start = start_time;
+        let final_end = end_time.unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+        let limit = 1500u32;
+
+        loop {
+            let candles = self
+                .get_klines_range(symbol, interval, Some(current_start), Some(final_end), Some(limit))
+                .await?;
+
+            if candles.is_empty() {
+                break;
+            }
+
+            let last_time = candles.last().map(|c| c.close_time.timestamp_millis());
+            all_candles.extend(candles);
+
+            // Se o ultimo candle esta proximo do end_time, terminamos
+            if let Some(lt) = last_time {
+                if lt >= final_end - 60000 {
+                    break;
+                }
+                current_start = lt + 1;
+            } else {
+                break;
+            }
+
+            // Rate limiting: pequena pausa entre requisicoes
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
+        // Remove duplicatas baseado no open_time
+        all_candles.sort_by_key(|c| c.open_time);
+        all_candles.dedup_by_key(|c| c.open_time);
+
+        Ok(all_candles)
+    }
+
     /// Parseia kline da API
     fn parse_kline(&self, k: &[serde_json::Value]) -> ExchangeResult<Candle> {
         if k.len() < 12 {

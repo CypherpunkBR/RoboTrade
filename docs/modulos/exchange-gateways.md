@@ -9,15 +9,23 @@ crates/exchange_gateways/src/
 ├── lib.rs              # Exportações e re-exportações
 ├── binance/            # Cliente Binance Futures
 │   ├── mod.rs          # Módulo principal
-│   ├── client.rs       # BinanceFuturesClient
+│   ├── client.rs       # BinanceFuturesClient (870 linhas)
 │   ├── models.rs       # Structs de request/response
 │   └── signer.rs       # Assinatura HMAC-SHA256
 └── kraken/             # Cliente Kraken Futures
     ├── mod.rs          # Módulo principal
-    ├── client.rs       # KrakenFuturesClient
-    ├── models.rs       # Structs de request/response
+    ├── client.rs       # KrakenFuturesClient (776 linhas)
+    ├── models.rs       # Structs de request/response (517 linhas)
     └── signer.rs       # Assinatura HMAC-SHA512
 ```
+
+## Status de Implementação
+
+| Gateway | Status | Descrição |
+|---------|--------|-----------|
+| BinanceFuturesClient | ✅ Completo | REST API completa para Binance Futures |
+| KrakenFuturesClient | ✅ Completo | REST API completa para Kraken Futures |
+| PaperTradingClient | 📋 Pendente | Simulador local (não implementado) |
 
 ## Binance Futures Client
 
@@ -248,8 +256,11 @@ let client = KrakenFuturesClient::mainnet("api_key", "api_secret");
 |----------|--------|------------|
 | Binance Futures | ✅ Implementado | - |
 | Kraken Futures | ✅ Implementado | - |
+| Paper Trading | 📋 Pendente | Alta |
 | Bybit | 📋 Planejado | Média |
 | OKX | 📋 Planejado | Baixa |
+
+> **Nota**: O Paper Trading (simulador local) ainda não está implementado. É necessário para testes seguros antes de trading real.
 
 ## Segurança
 

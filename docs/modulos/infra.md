@@ -10,14 +10,40 @@ crates/infra/src/
 ├── config/             # Sistema de configuração
 │   └── mod.rs          # AppConfig, GeneralConfig, etc.
 ├── database/           # Banco de dados SQLite
-│   ├── mod.rs          # Pool, migrations, schema
-│   ├── repositories/   # Implementações de repositórios
-│   │   ├── candle.rs   # SqliteCandleRepository
-│   │   └── fear_greed.rs # SqliteFearGreedRepository
-│   └── schema.sql      # Schema do banco
-└── logging/            # Logging estruturado
-    └── mod.rs          # Configuração do tracing
+│   ├── mod.rs          # Pool, migrations, init_database()
+│   ├── rows.rs         # Structs FromRow para SQLx (842 linhas)
+│   └── schema.rs       # Schema do banco
+├── repositories/       # Implementações de repositórios
+│   ├── mod.rs          # Módulo principal
+│   ├── candle.rs       # SqliteCandleRepository
+│   ├── fear_greed.rs   # SqliteFearGreedRepository
+│   ├── exchange.rs     # SqliteExchangeRepository
+│   └── symbol.rs       # SqliteSymbolRepository
+├── logging/            # Logging estruturado
+│   └── mod.rs          # Configuração do tracing
+└── migrations/         # SQL migrations
+    ├── 00001_initial_schema.sql
+    ├── 00002_views_and_functions.sql
+    └── 00003_triggers_and_maintenance.sql
 ```
+
+### Status de Implementação
+
+| Repositório | Status | Descrição |
+|-------------|--------|-----------|
+| SqliteCandleRepository | ✅ Implementado | Candles OHLCV |
+| SqliteFearGreedRepository | ✅ Implementado | Fear & Greed Index |
+| SqliteExchangeRepository | ✅ Implementado | Configuração de exchanges |
+| SqliteSymbolRepository | ✅ Implementado | Símbolos de trading |
+| AccountRepository | 📋 Pendente | Gerenciamento de contas |
+| OrderRepository | 📋 Pendente | Persistência de ordens |
+| PositionRepository | 📋 Pendente | Persistência de posições |
+| TradeRepository | 📋 Pendente | Histórico de trades |
+| SignalRepository | 📋 Pendente | Sinais de estratégia |
+| StrategyRepository | 📋 Pendente | Definições de estratégia |
+| RiskRepository | 📋 Pendente | Limites de risco |
+| JobRepository | 📋 Pendente | Fila de jobs |
+| NotificationRepository | 📋 Pendente | Alertas e notificações |
 
 ## Configuração
 
@@ -348,7 +374,7 @@ let latest = repo.get_latest("BTCUSDT", TimeFrame::H4).await?;
 #### SqliteFearGreedRepository
 
 ```rust
-use robotrade_infra::database::SqliteFearGreedRepository;
+use robotrade_infra::repositories::SqliteFearGreedRepository;
 use robotrade_core::traits::FearGreedRepository;
 
 let repo = SqliteFearGreedRepository::new(pool.clone());
@@ -361,6 +387,58 @@ let current = repo.get_current().await?;
 
 // Buscar histórico
 let history = repo.get_history(30).await?;
+```
+
+#### SqliteExchangeRepository
+
+```rust
+use robotrade_infra::repositories::{ExchangeRepository, SqliteExchangeRepository};
+
+let repo = SqliteExchangeRepository::new(pool.clone());
+
+// Buscar exchange por ID
+let exchange = repo.find_by_id("binance_futures").await?;
+
+// Listar todas as exchanges
+let all_exchanges = repo.find_all().await?;
+
+// Listar exchanges ativas
+let active = repo.find_active().await?;
+
+// Salvar ou atualizar exchange
+repo.save(&exchange).await?;
+
+// Atualizar status
+repo.update_status("binance_futures", ExchangeStatus::Maintenance).await?;
+```
+
+#### SqliteSymbolRepository
+
+```rust
+use robotrade_infra::repositories::{SymbolRepository, SqliteSymbolRepository};
+
+let repo = SqliteSymbolRepository::new(pool.clone());
+
+// Buscar símbolo por ID
+let symbol = repo.find_by_id(1).await?;
+
+// Buscar por exchange e nome
+let btcusdt = repo.find_by_exchange_and_name(
+    ExchangeId::BinanceFutures,
+    "BTCUSDT"
+).await?;
+
+// Listar símbolos de uma exchange
+let binance_symbols = repo.find_by_exchange(ExchangeId::BinanceFutures).await?;
+
+// Listar símbolos ativos
+let active = repo.find_active().await?;
+
+// Salvar símbolo (retorna ID)
+let id = repo.save(&symbol).await?;
+
+// Contar símbolos por exchange
+let count = repo.count_by_exchange(ExchangeId::BinanceFutures).await?;
 ```
 
 ## Logging

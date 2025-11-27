@@ -346,9 +346,9 @@ pub enum NotificationLevel {
     Error,
 }
 
-/// Notificação a ser enviada
+/// Payload de notificação a ser enviada (para serviços de notificação)
 #[derive(Debug, Clone)]
-pub struct Notification {
+pub struct NotificationPayload {
     /// Título
     pub title: String,
     /// Mensagem
@@ -363,7 +363,7 @@ pub struct Notification {
 #[async_trait]
 pub trait NotificationService: Send + Sync {
     /// Envia uma notificação
-    async fn send(&self, notification: Notification) -> InfraResult<()>;
+    async fn send(&self, notification: NotificationPayload) -> InfraResult<()>;
 
     /// Notifica sobre novo sinal
     async fn notify_signal(&self, signal: &Signal) -> InfraResult<()>;
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_notification_levels() {
-        let notification = Notification {
+        let notification = NotificationPayload {
             title: "Teste".into(),
             body: "Mensagem".into(),
             level: NotificationLevel::Info,

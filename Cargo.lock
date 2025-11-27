@@ -3786,6 +3786,7 @@ dependencies = [
 name = "robotrade-app"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "once_cell",
  "parking_lot",
@@ -3795,6 +3796,7 @@ dependencies = [
  "robotrade-market-data",
  "robotrade-trading-worker",
  "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "tauri",
@@ -3886,6 +3888,7 @@ dependencies = [
  "chrono",
  "robotrade-core",
  "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "tokio",

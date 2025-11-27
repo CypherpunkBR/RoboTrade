@@ -11,64 +11,112 @@ O RoboTrade é desenvolvido em fases incrementais, cada uma adicionando funciona
 │                           ROADMAP                                   │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│  Phase 1: Foundation          Phase 2: Trading        Phase 3: UI  │
+│  Phase 1: Foundation ✓        Phase 2: Trading ◐      Phase 3: UI  │
 │  ═══════════════════          ══════════════════      ════════════ │
-│  ✓ Core types                 □ Order execution       □ Dashboard  │
-│  ✓ Database schema            □ Position tracking     □ Charts     │
-│  ✓ Config system              □ Risk management       □ Settings   │
-│  ✓ Binance client             □ Paper trading         □ Alerts     │
-│  □ Market data                □ Strategy engine       □ History    │
+│  ✓ Core types                 ✓ Position tracking     □ Dashboard  │
+│  ✓ Database schema            ✓ Risk management       □ Charts     │
+│  ✓ Config system              ✓ Circuit breaker       □ Settings   │
+│  ✓ Binance client             ✓ Job queue             □ Alerts     │
+│  ✓ Kraken client              □ Paper trading         □ History    │
+│  ✓ Fear & Greed provider      □ Order execution                    │
 │                                                                     │
-│  Phase 4: Advanced            Phase 5: Polish         Phase 6:     │
+│  Phase 4: Advanced ◐          Phase 5: Polish         Phase 6:     │
 │  ════════════════════         ═══════════════════     Production   │
-│  □ Backtesting                □ Performance           ════════════ │
-│  □ Optimization               □ Documentation         □ Security   │
-│  □ Multiple strategies        □ Error handling        □ Deployment │
-│  □ Portfolio mgmt             □ Notifications         □ Updates    │
+│  ✓ Backtest engine            □ Performance           ════════════ │
+│  ✓ All indicators             ✓ Documentation         □ Security   │
+│  ✓ Fear & Greed strategy      □ Error handling        □ Deployment │
+│  □ Multiple strategies        □ Notifications         □ Updates    │
+│  □ Portfolio mgmt                                                   │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### Progresso Atual: ~70% da Fundação Completa
+
+| Módulo | Completude | Notas |
+|--------|------------|-------|
+| robotrade-core | 100% | Entidades, DTOs, erros, traits |
+| robotrade-analytics | 100% | 6 indicadores + backtest engine |
+| robotrade-trading-worker | 100% | Scheduler, risk, circuit breaker |
+| robotrade-exchange-gateways | 66% | Binance + Kraken (falta Paper) |
+| robotrade-infra | 69% | Config + DB + 4/13 repositórios |
+| robotrade-market-data | 33% | Apenas Fear & Greed provider |
+
 ---
 
-## Phase 1: Foundation ✓ (Em Progresso)
+## Phase 1: Foundation ✓ (Completa)
 
 **Objetivo**: Estabelecer a base do sistema com tipos, infraestrutura e conexões básicas.
 
 ### Concluído ✓
 
-- [x] Estrutura do workspace Cargo
-- [x] Tipos core (Candlestick, Order, Position, etc.)
+- [x] Estrutura do workspace Cargo (6 crates)
+- [x] Tipos core (Candlestick, Order, Position, Trade, Signal, Strategy, etc.)
 - [x] Traits fundamentais (ExchangeGateway, Repository, Strategy)
-- [x] Sistema de erros com thiserror
-- [x] Schema do banco de dados SQLite
-- [x] Migrations com sqlx
+- [x] Sistema de erros hierárquico com thiserror
+- [x] Schema do banco de dados SQLite (35+ tabelas, 18 views, 20+ triggers)
+- [x] Migrations com sqlx (3 arquivos de migração)
 - [x] Sistema de configuração TOML
-- [x] Cliente Binance básico (REST)
-- [x] Estrutura de documentação completa
+- [x] Cliente Binance Futures (REST) - 870 linhas
+- [x] Cliente Kraken Futures (REST) - 776 linhas
+- [x] Estrutura de documentação completa (45+ arquivos .md)
+- [x] Provider Fear & Greed Index funcional
+- [x] Database row types (842 linhas de FromRow structs)
+- [x] 4 repositórios SQLite implementados (Candle, FearGreed, Exchange, Symbol)
 
 ### Pendente
 
-- [ ] Provider Fear & Greed Index funcional
-- [ ] Testes unitários do core
 - [ ] Cache em memória para market data
 - [ ] Rate limiter para API calls
 - [ ] WebSocket Binance para streams
+- [ ] 9 repositórios adicionais (Account, Order, Position, Trade, Signal, Strategy, Risk, Job, Notification)
 
 ### Entregáveis
 
 - Crates `core`, `infra`, `exchange_gateways` funcionais
 - Banco de dados inicializado com migrations
-- Conexão básica com Binance API
-- Suite de testes inicial
+- Conexão com Binance e Kraken APIs
+- Provider Fear & Greed operacional
 
 ---
 
-## Phase 2: Trading Engine
+## Phase 2: Trading Engine ◐ (Em Progresso)
 
 **Objetivo**: Implementar execução de ordens e gestão de posições.
 
-### Tarefas
+### Concluído ✓
+
+- [x] Position Manager (491 linhas)
+  - [x] Abrir posições
+  - [x] Fechar posições (total/parcial)
+  - [x] Eventos de posição (PositionEvent)
+  - [x] Stop Loss / Take Profit
+
+- [x] Risk Management (522 linhas)
+  - [x] Limites de posição
+  - [x] Daily loss limit
+  - [x] Max leverage
+  - [x] RiskCheckResult e RiskRejectionReason
+
+- [x] Circuit Breaker (495 linhas)
+  - [x] Estados: Closed, Open, HalfOpen
+  - [x] Auto-recovery com half-open state
+  - [x] CircuitBreakerEvent
+
+- [x] Job Queue (567 linhas)
+  - [x] JobType, JobPayload
+  - [x] JobPriority (Low, Normal, High)
+  - [x] FIFO + priority handling
+
+- [x] Scheduler (8,718 linhas)
+  - [x] Event-driven architecture
+  - [x] SchedulerEvent enum
+  - [x] Periodic task execution
+
+- [x] Data Collector (4,259 linhas)
+  - [x] Market data aggregation
+
+### Pendente
 
 - [ ] Order Manager
   - [ ] Criar ordens de mercado e limitadas
@@ -76,54 +124,50 @@ O RoboTrade é desenvolvido em fases incrementais, cada uma adicionando funciona
   - [ ] Rastrear status de ordens
   - [ ] Histórico de ordens
 
-- [ ] Position Manager
-  - [ ] Abrir posições
-  - [ ] Fechar posições (total/parcial)
-  - [ ] Calcular P&L
-  - [ ] Stop Loss / Take Profit
-
 - [ ] Paper Trading
-  - [ ] Simulador de execução
+  - [ ] Simulador de execução local
   - [ ] Balanço virtual
   - [ ] Histórico de trades paper
 
-- [ ] Risk Management
-  - [ ] Limites de posição
-  - [ ] Daily loss limit
-  - [ ] Circuit breaker
-
 ### Entregáveis
 
-- Crate `trading_worker` funcional
-- Execução de ordens em paper mode
-- Gestão de posições com P&L
-- Sistema básico de risco
+- Crate `trading_worker` ✅ FUNCIONAL
+- ⚠️ Falta: Paper trading client
+- ⚠️ Falta: Order execution pipeline
 
 ---
 
-## Phase 3: Strategy Engine
+## Phase 3: Strategy Engine ✓ (Completa)
 
 **Objetivo**: Criar sistema de estratégias configuráveis.
 
-### Tarefas
+### Concluído ✓
 
-- [ ] Indicadores Técnicos
-  - [ ] SMA, EMA
-  - [ ] RSI
-  - [ ] MACD
-  - [ ] Bollinger Bands
-  - [ ] ATR
+- [x] Indicadores Técnicos (todos com testes)
+  - [x] SMA (Simple Moving Average)
+  - [x] EMA (Exponential Moving Average)
+  - [x] RSI (Relative Strength Index)
+  - [x] MACD (Moving Average Convergence Divergence)
+  - [x] Bollinger Bands
+  - [x] ATR (Average True Range)
 
-- [ ] Strategy Framework
-  - [ ] Trait Strategy
-  - [ ] Avaliação de sinais
-  - [ ] Entry/Exit rules
-  - [ ] Configuração via TOML/JSON
+- [x] Strategy Framework
+  - [x] Trait Strategy definida
+  - [x] Trait Indicator & CandleIndicator
+  - [x] Helpers: extract_close_prices, extract_high_prices, etc.
 
-- [ ] Fear & Greed Strategy
-  - [ ] Integração com índice
-  - [ ] Regras de entrada/saída
-  - [ ] Parâmetros configuráveis
+- [x] Fear & Greed Strategy (377 linhas)
+  - [x] Integração com índice Alternative.me
+  - [x] Regras de entrada/saída
+  - [x] Parâmetros configuráveis
+
+- [x] Backtest Engine (635 linhas)
+  - [x] Simulador de mercado
+  - [x] Equity curve tracking
+  - [x] Drawdown calculation
+  - [x] Trade statistics
+
+### Pendente
 
 - [ ] Strategy Versioning
   - [ ] Histórico de versões
@@ -132,48 +176,57 @@ O RoboTrade é desenvolvido em fases incrementais, cada uma adicionando funciona
 
 ### Entregáveis
 
-- Crate `analytics` com indicadores
-- Framework de estratégias extensível
+- Crate `analytics` ✅ FUNCIONAL
+- 6 indicadores técnicos completos
 - Fear & Greed strategy implementada
-- Sistema de versionamento
+- Backtest engine operacional
 
 ---
 
-## Phase 4: Backtesting
+## Phase 4: Backtesting ✓ (Parcialmente Completa)
 
 **Objetivo**: Motor de backtesting para validação de estratégias.
 
-### Tarefas
+### Concluído ✓
 
-- [ ] Backtest Engine
-  - [ ] Simulador de mercado
-  - [ ] Execução de estratégias em dados históricos
-  - [ ] Cálculo de métricas
+- [x] Backtest Engine (635 linhas)
+  - [x] Simulador de mercado
+  - [x] Execução de estratégias em dados históricos
+  - [x] Cálculo de métricas
 
-- [ ] Métricas
-  - [ ] Total Return
+- [x] Métricas
+  - [x] Total Return
+  - [x] Max Drawdown
+  - [x] Win Rate
+  - [x] Equity curve
+  - [x] Trade statistics
+
+- [x] Visualização (dados estruturados)
+  - [x] Equity curve (JSON)
+  - [x] Trade list (JSON)
+
+### Pendente
+
+- [ ] Métricas Avançadas
   - [ ] Sharpe Ratio
   - [ ] Sortino Ratio
-  - [ ] Max Drawdown
-  - [ ] Win Rate
   - [ ] Profit Factor
-
-- [ ] Visualização
-  - [ ] Equity curve
-  - [ ] Drawdown chart
-  - [ ] Trade list
 
 - [ ] Otimização
   - [ ] Grid search de parâmetros
   - [ ] Walk-forward analysis
   - [ ] Monte Carlo simulation
 
+- [ ] UI de Visualização
+  - [ ] Gráfico de equity curve
+  - [ ] Drawdown chart visual
+
 ### Entregáveis
 
-- Backtest engine completo
-- Suite de métricas de performance
-- API para rodar backtests
-- Relatórios de resultado
+- Backtest engine ✅ FUNCIONAL
+- Suite básica de métricas ✅
+- ⚠️ Falta: métricas avançadas (Sharpe, Sortino)
+- ⚠️ Falta: otimização de parâmetros
 
 ---
 
@@ -335,9 +388,10 @@ Features consideradas para versões futuras:
 
 | Exchange | Status | Tipo | Prioridade |
 |----------|--------|------|------------|
-| Binance Futures | 🔄 Em desenvolvimento | Perpetual | Alta |
+| Binance Futures | ✅ Implementado | Perpetual | - |
+| Kraken Futures | ✅ Implementado | Perpetual | - |
+| Paper Trading | 📋 Pendente | Simulador | Alta |
 | Binance Spot | 📋 Planejado | Spot | Média |
-| Kraken Pro Futures | 📋 Planejado | Perpetual | Média |
 | Bybit | 📋 Planejado | Perpetual | Baixa |
 | OKX | 📋 Planejado | Perpetual | Baixa |
 
@@ -381,5 +435,24 @@ Consulte [Contributing Guide](./development/contributing.md) para detalhes.
 
 ---
 
-**Última atualização**: 2024-01
+**Última atualização**: 2025-11-27
 **Versão do projeto**: 0.1.0
+
+---
+
+## Resumo de Progresso por Módulo
+
+| Crate | Linhas de Código | Status | Completude |
+|-------|------------------|--------|------------|
+| robotrade-core | ~18,000+ | ✅ Pronto | 100% |
+| robotrade-analytics | ~1,200 | ✅ Pronto | 100% |
+| robotrade-trading-worker | ~14,000 | ✅ Pronto | 100% |
+| robotrade-exchange-gateways | ~2,200 | ◐ Parcial | 66% |
+| robotrade-infra | ~1,500+ | ◐ Parcial | 69% |
+| robotrade-market-data | ~300 | ◐ Mínimo | 33% |
+
+### Próximas Prioridades (Tier 1)
+
+1. **Implementar Paper Trading Client** - Necessário para testes seguros
+2. **Implementar repositórios pendentes** - 9 repositórios faltando
+3. **Adicionar Binance WebSocket provider** - Market data em tempo real

@@ -18,9 +18,10 @@ robotrade-core = { path = "../crates/core" }
 robotrade-infra = { path = "../crates/infra" }
 robotrade-market-data = { path = "../crates/market_data" }
 robotrade-exchange-gateways = { path = "../crates/exchange_gateways" }
+robotrade-trading-worker = { path = "../crates/trading_worker" }
 
 # Tauri
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-shell = "2"
 tauri-plugin-notification = "2"
 
@@ -33,7 +34,9 @@ serde_json = { workspace = true }
 
 # Tipos
 rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
 chrono = { workspace = true }
+async-trait = { workspace = true }
 
 # Logging
 tracing = { workspace = true }

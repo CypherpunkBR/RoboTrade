@@ -1,11 +1,12 @@
 //! System Tray do RoboTrade
 
 use tauri::{
+    image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     App, Manager, Runtime,
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 /// Configura o system tray
 pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), Box<dyn std::error::Error>> {
@@ -45,8 +46,17 @@ pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), Box<dyn std::error::Er
         ],
     )?;
 
+    // Carrega o ícone do tray (embutido em compile time)
+    // O ícone é carregado de src-tauri/icons/icon.png
+    let icon = include_bytes!("../icons/icon.png");
+    let icon_image = Image::from_bytes(icon).map_err(|e| {
+        error!("Erro ao carregar ícone do tray: {}", e);
+        e
+    })?;
+
     // Cria tray icon
     let _tray = TrayIconBuilder::new()
+        .icon(icon_image)
         .menu(&menu)
         .tooltip("RoboTrade - Paper Trading")
         .on_menu_event(|app, event| {

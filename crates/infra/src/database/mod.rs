@@ -2,8 +2,10 @@
 //!
 //! Gerenciamento de conexão e migrations.
 
+mod rows;
 mod schema;
 
+pub use rows::*;
 pub use schema::*;
 
 use robotrade_core::error::{InfraError, InfraResult};

@@ -4,10 +4,16 @@
   "version": "0.1.0",
   "identifier": "br.com.cypherpunk.robotrade",
   "build": {
-    "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist"
+    "beforeDevCommand": {
+      "cwd": "../src-web",
+      "script": "pnpm dev"
+    },
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": {
+      "cwd": "../src-web",
+      "script": "pnpm build"
+    },
+    "frontendDist": "../src-web/dist"
   },
   "app": {
     "withGlobalTauri": true,
@@ -52,9 +58,6 @@
   "plugins": {
     "shell": {
       "open": true
-    },
-    "notification": {
-      "all": true
     }
   }
 }

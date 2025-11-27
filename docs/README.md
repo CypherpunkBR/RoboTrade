@@ -192,4 +192,4 @@ docs/
 ---
 
 **Versão do Projeto**: 0.1.0
-**Última Atualização**: 2024-01
+**Última Atualização**: 2025-11-27

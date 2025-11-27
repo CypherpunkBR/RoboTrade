@@ -7,14 +7,27 @@
 //! - Métricas de performance
 
 pub mod backtest;
+pub mod indicators;
 pub mod strategies;
 
-// Re-exports
+// Re-exports - Backtest
 pub use backtest::{BacktestConfig, BacktestEngine};
+
+// Re-exports - Strategies
 pub use strategies::{fear_greed::FearGreedStrategyConfig, FearGreedStrategy, Strategy};
 
-// TODO: Implementar módulos adicionais
-// pub mod indicators;
-// pub mod strategies;
-// pub mod backtest;
-// pub mod metrics;
+// Re-exports - Indicators
+pub use indicators::{
+    // Traits
+    Indicator, CandleIndicator,
+    // Moving Averages
+    SMA, EMA,
+    // Oscillators
+    RSI, RSILevels,
+    MACD, MACDResult,
+    // Volatility
+    BollingerBands, BollingerResult,
+    ATR, ATRMultipliers,
+    // Utils
+    extract_close_prices, extract_high_prices, extract_low_prices,
+};
