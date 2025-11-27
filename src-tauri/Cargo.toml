@@ -27,6 +27,7 @@ tauri-plugin-notification = "2"
 
 # Async
 tokio = { workspace = true }
+futures = { workspace = true }
 
 # Serialização
 serde = { workspace = true }
@@ -36,7 +37,11 @@ serde_json = { workspace = true }
 rust_decimal = { workspace = true }
 rust_decimal_macros = { workspace = true }
 chrono = { workspace = true }
+uuid = { workspace = true }
 async-trait = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
 
 # Logging
 tracing = { workspace = true }

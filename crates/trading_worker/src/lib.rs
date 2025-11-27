@@ -8,6 +8,7 @@
 //! - Risk management
 //! - Circuit breaker
 //! - WebSocket management (multi-exchange)
+//! - Historical sync engine
 
 pub mod collector;
 pub mod scheduler;
@@ -16,6 +17,10 @@ pub mod position_manager;
 pub mod risk;
 pub mod circuit_breaker;
 pub mod ws_manager;
+pub mod sync_engine;
+pub mod ledger_service;
+pub mod pnl_calculator;
+pub mod reconciliation_service;
 
 // Re-exports
 pub use collector::DataCollector;
@@ -30,4 +35,25 @@ pub use ws_manager::{
     BalanceUpdateEvent, PositionUpdateEvent, OrderUpdateEvent, TradeEvent,
     AccountLogEvent, ConnectionStateEvent, ErrorEvent,
     PositionSide, OrderSide, OrderStatus, AccountLogType,
+};
+pub use sync_engine::{
+    SyncEngine, SyncEngineHandle, SyncConfig, SyncDataType, SyncStatus,
+    SyncState, SyncProgressEvent, SyncDataStore, ExchangeSyncAdapter,
+    SyncedTrade, SyncedOrder, SyncedPosition, SyncedBalance,
+    SyncedDeposit, SyncedWithdrawal, SyncedFunding,
+};
+pub use ledger_service::{
+    LedgerService, LedgerStore, LedgerEntry, LedgerEntryType,
+    LedgerFilters, LedgerSummary, AssetBalance,
+};
+pub use pnl_calculator::{
+    PnLCalculator, TaxLotStore, CostBasisMethod,
+    TaxLot, RealizedPnL, UnrealizedPnL, PnLSummary,
+    PositionSide as PnLPositionSide, AcquisitionType,
+};
+pub use reconciliation_service::{
+    ReconciliationService, ReconciliationConfig, ReconciliationStore,
+    ReconciliationSnapshot, ReconciliationStatus, ReconciliationHealth,
+    Discrepancy, DiscrepancyType, BalanceSnapshot, HealthStatus,
+    BalanceFetcher, LedgerBalanceFetcher,
 };

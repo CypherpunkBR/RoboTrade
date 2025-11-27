@@ -116,10 +116,24 @@ RUST_LOG=debug,sqlx=warn,hyper=warn
 # Caminho do banco de dados (opcional, usa default se não definido)
 DATABASE_URL=sqlite:./data/robotrade.db
 
-# Para testes com API real (opcional)
-# BINANCE_API_KEY=sua_api_key_aqui
-# BINANCE_SECRET_KEY=sua_secret_key_aqui
+# ======================================
+# BINANCE FUTURES (obrigatório para trading real)
+# ======================================
+BINANCE_API_KEY=sua_api_key_aqui
+BINANCE_API_SECRET=sua_api_secret_aqui
+BINANCE_TESTNET=false  # true para testnet
+
+# ======================================
+# KRAKEN FUTURES (opcional - atualmente com erro de autenticação)
+# ======================================
+KRAKEN_FUTURES_API_KEY=sua_api_key_aqui
+KRAKEN_FUTURES_API_SECRET=sua_api_secret_aqui
+KRAKEN_FUTURES_DEMO=true  # true para ambiente demo
 ```
+
+**Importante**:
+- As credenciais da Binance são necessárias para ver o histórico de trades na aba "Histórico"
+- A integração com Kraken Futures está com problema de autenticação (veja [CURRENT_STATUS.md](../CURRENT_STATUS.md))
 
 ### 5. Inicialize o Banco de Dados
 

@@ -329,6 +329,7 @@ impl ExchangeService {
 
         // Paper balances
         if let Ok(b) = self.paper_client.get_balances().await {
+            debug!(count = b.len(), "Saldos paper trading carregados");
             balances.insert("paper".to_string(), b);
         }
 
@@ -336,9 +337,22 @@ impl ExchangeService {
         {
             let guard = self.binance_client.read().await;
             if let Some(ref client) = *guard {
-                if let Ok(b) = ExchangeGateway::get_balances(client).await {
-                    balances.insert("binance".to_string(), b);
+                debug!("Buscando saldos da Binance...");
+                match ExchangeGateway::get_balances(client).await {
+                    Ok(b) => {
+                        info!(
+                            count = b.len(),
+                            balances = ?b.iter().map(|bal| format!("{}: {} free, {} locked", bal.asset, bal.free, bal.locked)).collect::<Vec<_>>(),
+                            "Saldos Binance carregados"
+                        );
+                        balances.insert("binance".to_string(), b);
+                    }
+                    Err(e) => {
+                        warn!("Erro ao buscar saldos Binance: {}", e);
+                    }
                 }
+            } else {
+                debug!("Cliente Binance não inicializado");
             }
         }
 
@@ -346,9 +360,22 @@ impl ExchangeService {
         {
             let guard = self.kraken_client.read().await;
             if let Some(ref client) = *guard {
-                if let Ok(b) = ExchangeGateway::get_balances(client).await {
-                    balances.insert("kraken".to_string(), b);
+                debug!("Buscando saldos da Kraken...");
+                match ExchangeGateway::get_balances(client).await {
+                    Ok(b) => {
+                        info!(
+                            count = b.len(),
+                            balances = ?b.iter().map(|bal| format!("{}: {} free, {} locked", bal.asset, bal.free, bal.locked)).collect::<Vec<_>>(),
+                            "Saldos Kraken carregados"
+                        );
+                        balances.insert("kraken".to_string(), b);
+                    }
+                    Err(e) => {
+                        warn!("Erro ao buscar saldos Kraken: {}", e);
+                    }
                 }
+            } else {
+                debug!("Cliente Kraken não inicializado");
             }
         }
 
@@ -377,6 +404,20 @@ impl ExchangeService {
                 Ok(())
             }
         }
+    }
+
+    /// Retorna referência ao cliente Kraken (para acesso direto)
+    pub async fn kraken_client(
+        &self,
+    ) -> tokio::sync::RwLockReadGuard<'_, Option<KrakenFuturesClient>> {
+        self.kraken_client.read().await
+    }
+
+    /// Retorna referência ao cliente Binance (para acesso direto)
+    pub async fn binance_client(
+        &self,
+    ) -> tokio::sync::RwLockReadGuard<'_, Option<BinanceFuturesClient>> {
+        self.binance_client.read().await
     }
 }
 

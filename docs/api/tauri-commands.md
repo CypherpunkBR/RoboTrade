@@ -700,6 +700,145 @@ pub async fn cancel_job(
 
 ---
 
+## History
+
+### get_trade_history
+
+Busca histórico de trades completos (posições fechadas).
+
+```rust
+#[tauri::command]
+pub async fn get_trade_history(
+    state: State<'_, AppState>,
+    symbol: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<TradeDto>, String>
+```
+
+**Parâmetros:**
+
+| Nome | Tipo | Descrição |
+|------|------|-----------|
+| `symbol` | `string?` | Filtrar por símbolo (opcional) |
+| `limit` | `number?` | Número máximo de trades (default: 100) |
+
+**Retorno:** `TradeDto[]`
+
+```typescript
+interface TradeDto {
+  id: string;
+  exchange: string;
+  symbol: string;
+  side: 'long' | 'short';
+  entry_price: string;
+  exit_price: string;
+  quantity: string;
+  gross_pnl: string;
+  fees: string;
+  net_pnl: string;
+  roi_pct: string;
+  entered_at: string;
+  exited_at: string;
+  duration: string;
+  close_reason: string;
+}
+```
+
+---
+
+### get_trade_stats
+
+Obtém estatísticas de trading.
+
+```rust
+#[tauri::command]
+pub async fn get_trade_stats(
+    state: State<'_, AppState>,
+) -> Result<TradeStatsDto, String>
+```
+
+**Retorno:** `TradeStatsDto`
+
+```typescript
+interface TradeStatsDto {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate_pct: string;
+  total_pnl: string;
+  gross_profit: string;
+  gross_loss: string;
+  avg_win: string;
+  avg_loss: string;
+  largest_win: string;
+  largest_loss: string;
+  profit_factor: string;
+  total_fees: string;
+}
+```
+
+---
+
+### get_fill_history
+
+Busca histórico de execuções/fills das exchanges.
+
+```rust
+#[tauri::command]
+pub async fn get_fill_history(
+    state: State<'_, AppState>,
+    symbol: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<FillDto>, String>
+```
+
+**Parâmetros:**
+
+| Nome | Tipo | Descrição |
+|------|------|-----------|
+| `symbol` | `string?` | Filtrar por símbolo (opcional) |
+| `limit` | `number?` | Número máximo por símbolo (default: 100) |
+
+**Notas de Implementação:**
+- Busca fills de 10 pares principais: BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, XRPUSDT, DOGEUSDT, ADAUSDT, AVAXUSDT, LINKUSDT, DOTUSDT
+- Ordena por timestamp decrescente
+- Combina dados de Binance e Kraken (quando disponível)
+
+**Retorno:** `FillDto[]`
+
+```typescript
+interface FillDto {
+  id: string;
+  exchange: string;        // "binance_futures", "kraken_futures", "paper"
+  symbol: string;
+  order_id: string;
+  side: string;            // "Buy" ou "Sell"
+  price: string;
+  quantity: string;
+  fee: string;
+  fee_asset: string;
+  realized_pnl: string | null;
+  timestamp: string;       // ISO 8601
+}
+```
+
+**Exemplo:**
+
+```typescript
+// Buscar últimas 100 execuções
+const fills = await invoke<FillDto[]>('get_fill_history', {
+  limit: 100,
+});
+
+// Filtrar por símbolo
+const btcFills = await invoke<FillDto[]>('get_fill_history', {
+  symbol: 'BTCUSDT',
+  limit: 50,
+});
+```
+
+---
+
 ## Telemetry
 
 ### get_logs

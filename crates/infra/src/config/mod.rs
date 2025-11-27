@@ -63,6 +63,10 @@ pub struct AppConfig {
     /// Configurações de exchange
     #[serde(default)]
     pub exchange: ExchangeConfig,
+
+    /// Preferências do usuário (filtros, UI state)
+    #[serde(default)]
+    pub user_preferences: UserPreferences,
 }
 
 impl AppConfig {
@@ -433,6 +437,35 @@ fn default_request_timeout() -> u32 {
 
 fn default_max_retries() -> u32 {
     3
+}
+
+/// Preferências do usuário para filtros e estado da UI
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserPreferences {
+    /// Exchange padrão para filtrar (all, binance, kraken, paper)
+    #[serde(default = "default_exchange_filter")]
+    pub default_exchange: String,
+
+    /// Moeda padrão para filtrar (all ou símbolo específico)
+    #[serde(default = "default_currency_filter")]
+    pub default_currency: String,
+}
+
+impl Default for UserPreferences {
+    fn default() -> Self {
+        Self {
+            default_exchange: default_exchange_filter(),
+            default_currency: default_currency_filter(),
+        }
+    }
+}
+
+fn default_exchange_filter() -> String {
+    "all".into()
+}
+
+fn default_currency_filter() -> String {
+    "all".into()
 }
 
 #[cfg(test)]

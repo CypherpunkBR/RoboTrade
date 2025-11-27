@@ -8,7 +8,7 @@ use robotrade_core::entities::{OrderRequest, TimeInForce};
 use robotrade_infra::AppConfig;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use tracing::{debug, info, warn};
 
@@ -57,27 +57,71 @@ pub async fn get_dashboard_summary(state: State<'_, AppState>) -> CommandResult<
     let positions = state.exchange.get_all_positions().await;
     let orders = state.exchange.get_all_open_orders().await;
 
-    // Calcula saldo total de todas as exchanges
+    // Calcula saldo total de todas as exchanges (excluindo paper se tiver exchanges reais)
     let all_balances = state.exchange.get_all_balances().await;
+
+    // Verifica se temos exchanges reais conectadas
+    let has_real_exchange = all_balances.contains_key("binance") || all_balances.contains_key("kraken");
+
+    // Calcula saldo - se tiver exchange real, ignora paper trading
     let total_balance_usdt: Decimal = all_balances
-        .values()
-        .flat_map(|balances| balances.iter())
+        .iter()
+        .filter(|(exchange, _)| {
+            // Se temos exchange real, ignora paper
+            if has_real_exchange {
+                *exchange != "paper"
+            } else {
+                true
+            }
+        })
+        .flat_map(|(exchange, balances)| {
+            debug!(exchange = %exchange, count = balances.len(), "Saldos da exchange");
+            let exchange = exchange.clone();
+            balances.iter().map(move |b| {
+                debug!(
+                    exchange = %exchange,
+                    asset = %b.asset,
+                    free = %b.free,
+                    locked = %b.locked,
+                    "Saldo encontrado"
+                );
+                b
+            })
+        })
         .filter(|b| b.asset == "USDT" || b.asset == "USD")
         .map(|b| b.free + b.locked)
         .sum();
 
+    info!(
+        total_balance = %total_balance_usdt,
+        has_real_exchange = has_real_exchange,
+        exchanges = ?all_balances.keys().collect::<Vec<_>>(),
+        "Saldo total calculado"
+    );
+
     // Calcula PnL não realizado total
     let unrealized_pnl: Decimal = positions.iter().map(|p| p.unrealized_pnl).sum();
+    let daily_pnl = state.daily_pnl() + unrealized_pnl;
+
+    // Calcula percentual do PnL baseado no saldo total
+    let daily_pnl_pct = if total_balance_usdt > Decimal::ZERO {
+        // PnL% = (daily_pnl / (total_balance - daily_pnl)) * 100
+        // Onde (total_balance - daily_pnl) é o saldo inicial do dia
+        let initial_balance = total_balance_usdt - daily_pnl;
+        if initial_balance > Decimal::ZERO {
+            (daily_pnl / initial_balance) * dec!(100)
+        } else {
+            Decimal::ZERO
+        }
+    } else {
+        Decimal::ZERO
+    };
 
     Ok(DashboardSummary {
         trading_mode: state.trading_mode(),
-        total_balance_usdt: if total_balance_usdt > Decimal::ZERO {
-            total_balance_usdt
-        } else {
-            Decimal::from(10000) // Fallback para paper trading
-        },
-        daily_pnl: state.daily_pnl() + unrealized_pnl,
-        daily_pnl_pct: Decimal::ZERO,
+        total_balance_usdt,
+        daily_pnl,
+        daily_pnl_pct,
         open_positions_count: positions.len() as u32,
         active_orders_count: orders.len() as u32,
         active_signals_count: 0,
@@ -1031,4 +1075,243 @@ pub async fn disable_price_alert(state: State<'_, AppState>, id: String) -> Comm
 pub async fn enable_price_alert(state: State<'_, AppState>, id: String) -> CommandResult<bool> {
     info!(alert_id = %id, "Reativando alerta de preco...");
     Ok(state.market_data.reactivate_alert(&id))
+}
+
+// =============================================================================
+// Fill History (Execucoes)
+// =============================================================================
+
+/// DTO para fill/execucao do historico
+#[derive(Debug, Serialize)]
+pub struct FillDto {
+    pub id: String,
+    pub exchange: String,
+    pub symbol: String,
+    pub side: String,
+    pub price: Decimal,
+    pub quantity: Decimal,
+    pub fee: Decimal,
+    pub fee_asset: String,
+    pub realized_pnl: Option<Decimal>,
+    pub timestamp: String,
+}
+
+/// Busca historico de fills/execucoes das exchanges
+#[tauri::command]
+pub async fn get_fill_history(
+    state: State<'_, AppState>,
+    symbol: Option<String>,
+    limit: Option<u32>,
+) -> CommandResult<Vec<FillDto>> {
+    info!(symbol = ?symbol, limit = ?limit, "Buscando historico de fills...");
+
+    let mut all_fills: Vec<FillDto> = Vec::new();
+    let limit = limit.unwrap_or(100) as usize;
+    let mut exchanges_checked = 0;
+
+    // Busca fills da Kraken
+    {
+        let guard = state.exchange.kraken_client().await;
+        if let Some(ref client) = *guard {
+            exchanges_checked += 1;
+            info!("Buscando fills da Kraken Futures...");
+            match client.get_fills(None).await {
+                Ok(fills) => {
+                    let kraken_count = fills.len();
+                    for fill in fills {
+                        // Filtrar por símbolo se especificado
+                        if let Some(ref sym) = symbol {
+                            if !fill.symbol.contains(sym) {
+                                continue;
+                            }
+                        }
+
+                        let fee = fill
+                            .fee_paid
+                            .as_ref()
+                            .and_then(|f| f.parse::<Decimal>().ok())
+                            .unwrap_or(Decimal::ZERO);
+
+                        all_fills.push(FillDto {
+                            id: fill.fill_id.clone(),
+                            exchange: "kraken_futures".to_string(),
+                            symbol: fill.symbol.clone(),
+                            side: fill.side.clone(),
+                            price: fill.price.parse().unwrap_or(Decimal::ZERO),
+                            quantity: fill.size.parse().unwrap_or(Decimal::ZERO),
+                            fee,
+                            fee_asset: fill.fee_currency.clone().unwrap_or_default(),
+                            realized_pnl: None,
+                            timestamp: fill.fill_time.clone(),
+                        });
+                    }
+                    info!(total = kraken_count, added = all_fills.len(), "Fills Kraken carregados");
+                }
+                Err(e) => {
+                    warn!("Erro ao buscar fills Kraken: {}", e);
+                }
+            }
+        } else {
+            debug!("Cliente Kraken não inicializado - credenciais não configuradas");
+        }
+    }
+
+    // Busca fills da Binance
+    {
+        let guard = state.exchange.binance_client().await;
+        if let Some(ref client) = *guard {
+            exchanges_checked += 1;
+            // Binance requer símbolo específico, então busca para símbolos comuns
+            let symbols = if let Some(ref sym) = symbol {
+                vec![sym.clone()]
+            } else {
+                // Lista expandida de pares populares
+                vec![
+                    "BTCUSDT".to_string(),
+                    "ETHUSDT".to_string(),
+                    "BNBUSDT".to_string(),
+                    "SOLUSDT".to_string(),
+                    "XRPUSDT".to_string(),
+                    "DOGEUSDT".to_string(),
+                    "ADAUSDT".to_string(),
+                    "AVAXUSDT".to_string(),
+                    "LINKUSDT".to_string(),
+                    "DOTUSDT".to_string(),
+                ]
+            };
+
+            info!(symbols = ?symbols, "Buscando fills da Binance Futures...");
+
+            for sym in symbols {
+                match client.get_user_trades(&sym, None, None, Some(50)).await {
+                    Ok(trades) => {
+                        let binance_count = trades.len();
+                        for trade in trades {
+                            let pnl = trade.realized_pnl.parse::<Decimal>().ok();
+                            let fee = trade.commission.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+
+                            all_fills.push(FillDto {
+                                id: trade.id.to_string(),
+                                exchange: "binance_futures".to_string(),
+                                symbol: trade.symbol.clone(),
+                                side: trade.side.clone(),
+                                price: trade.price.parse().unwrap_or(Decimal::ZERO),
+                                quantity: trade.qty.parse().unwrap_or(Decimal::ZERO),
+                                fee,
+                                fee_asset: trade.commission_asset.clone(),
+                                realized_pnl: pnl,
+                                timestamp: chrono::DateTime::from_timestamp_millis(trade.time)
+                                    .map(|dt| dt.to_rfc3339())
+                                    .unwrap_or_default(),
+                            });
+                        }
+                        if binance_count > 0 {
+                            debug!(symbol = %sym, count = binance_count, "Trades Binance encontrados");
+                        }
+                    }
+                    Err(e) => {
+                        // Não loga erro para símbolos sem trades (comum)
+                        debug!(symbol = %sym, error = %e, "Erro ao buscar trades Binance");
+                    }
+                }
+            }
+            info!(total = all_fills.len(), "Fills Binance carregados");
+        } else {
+            debug!("Cliente Binance não inicializado - credenciais não configuradas");
+        }
+    }
+
+    // Ordena por timestamp (mais recentes primeiro)
+    all_fills.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+
+    // Limita resultados
+    all_fills.truncate(limit);
+
+    info!(
+        exchanges_checked = exchanges_checked,
+        total_fills = all_fills.len(),
+        "Historico de fills carregado"
+    );
+
+    if exchanges_checked == 0 {
+        debug!("Nenhuma exchange configurada - configure credenciais de API no arquivo .env");
+    }
+
+    Ok(all_fills)
+}
+
+// =============================================================================
+// User Preferences
+// =============================================================================
+
+/// DTO para preferências do usuário
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserPreferencesDto {
+    pub default_exchange: String,
+    pub default_currency: String,
+}
+
+/// Retorna preferências do usuário
+#[tauri::command]
+pub async fn get_user_preferences() -> CommandResult<UserPreferencesDto> {
+    debug!("Buscando preferências do usuário...");
+
+    let config = AppConfig::load()
+        .await
+        .map_err(|e| format!("Erro ao carregar configuração: {}", e))?;
+
+    Ok(UserPreferencesDto {
+        default_exchange: config.user_preferences.default_exchange,
+        default_currency: config.user_preferences.default_currency,
+    })
+}
+
+/// Salva preferências do usuário
+#[tauri::command]
+pub async fn save_user_preferences(prefs: UserPreferencesDto) -> CommandResult<()> {
+    info!(
+        exchange = %prefs.default_exchange,
+        currency = %prefs.default_currency,
+        "Salvando preferências do usuário..."
+    );
+
+    let mut config = AppConfig::load()
+        .await
+        .map_err(|e| format!("Erro ao carregar configuração: {}", e))?;
+
+    config.user_preferences.default_exchange = prefs.default_exchange;
+    config.user_preferences.default_currency = prefs.default_currency;
+
+    config
+        .save()
+        .await
+        .map_err(|e| format!("Erro ao salvar configuração: {}", e).into())
+}
+
+/// Retorna lista de moedas disponíveis
+#[tauri::command]
+pub async fn get_available_currencies(state: State<'_, AppState>) -> CommandResult<Vec<String>> {
+    debug!("Buscando moedas disponíveis...");
+
+    // Busca saldos de todas as exchanges para extrair as moedas
+    let all_balances = state.exchange.get_all_balances().await;
+
+    let mut currencies: Vec<String> = all_balances
+        .values()
+        .flat_map(|balances| balances.iter().map(|b| b.asset.clone()))
+        .collect();
+
+    // Remove duplicatas e ordena
+    currencies.sort();
+    currencies.dedup();
+
+    // Adiciona as principais moedas de trading se não estiverem presentes
+    for currency in ["USDT", "BTC", "ETH", "USD"] {
+        if !currencies.contains(&currency.to_string()) {
+            currencies.push(currency.to_string());
+        }
+    }
+
+    currencies.sort();
+    Ok(currencies)
 }

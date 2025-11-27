@@ -7,6 +7,7 @@ import type {
   BalanceDto,
   TradeDto,
   TradeStatsDto,
+  FillDto,
   TradingMode,
   ConnectionStatus,
   CreateOrderRequest,
@@ -65,6 +66,10 @@ export async function getTradeHistory(symbol?: string, limit?: number): Promise<
 
 export async function getTradeStats(): Promise<TradeStatsDto> {
   return invoke('get_trade_stats');
+}
+
+export async function getFillHistory(symbol?: string, limit?: number): Promise<FillDto[]> {
+  return invoke('get_fill_history', { symbol, limit });
 }
 
 // Configuração
@@ -214,4 +219,38 @@ export async function disablePriceAlert(id: string): Promise<boolean> {
 
 export async function enablePriceAlert(id: string): Promise<boolean> {
   return invoke('enable_price_alert', { id });
+}
+
+// User Preferences
+export interface UserPreferences {
+  default_exchange: string;
+  default_currency: string;
+}
+
+export async function getUserPreferences(): Promise<UserPreferences | null> {
+  try {
+    return await invoke('get_user_preferences');
+  } catch {
+    // Command may not exist yet, return default
+    return { default_exchange: 'all', default_currency: 'all' };
+  }
+}
+
+export async function saveUserPreferences(prefs: UserPreferences): Promise<void> {
+  try {
+    return await invoke('save_user_preferences', { prefs });
+  } catch {
+    // Command may not exist yet, ignore
+    console.warn('save_user_preferences not available');
+  }
+}
+
+export async function getAvailableCurrencies(): Promise<string[]> {
+  try {
+    return await invoke('get_available_currencies');
+  } catch {
+    // Fallback: derive from balances
+    const balances = await getBalances();
+    return [...new Set(balances.map(b => b.asset))];
+  }
 }

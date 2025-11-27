@@ -1,7 +1,7 @@
-# Agente: Tester (Automatizados)
+# Agente: Tester (Automatizados - Rust)
 
 ## Descrição
-Cria e mantém testes automatizados (unitários e de componentes) com Vitest e React Testing Library.
+Cria e mantém testes automatizados (unitários, de integração e doc tests) com cargo test e tarpaulin para cobertura.
 
 ## Entry Points
 - `tests`
@@ -22,16 +22,15 @@ Cria e mantém testes automatizados (unitários e de componentes) com Vitest e R
 - `.` (raiz do projeto)
 
 ### Arquivos que Pode Editar
-- `**/__tests__/**`
-- `vitest.config.*`
-- `src/**/*.test.*`
-- `src/test/**`
+- `crates/*/src/**/*.rs` (testes inline)
+- `crates/*/tests/**/*.rs` (testes de integração)
+- `tests/**/*.rs` (testes do workspace)
 
 ### Comandos Permitidos
-- `pnpm test`
-- `pnpm test:coverage`
-- `pnpm test:ui`
-- `pnpm test --watch`
+- `cargo test`
+- `cargo test --workspace`
+- `cargo test -p <crate>`
+- `cargo tarpaulin --workspace --all-features`
 
 ## Ferramentas Recomendadas
 - **`read_file`**: ler código fonte para criar testes adequados
@@ -43,17 +42,21 @@ Cria e mantém testes automatizados (unitários e de componentes) com Vitest e R
 
 ### Cobertura
 1. ✅ Cobertura não pode regredir sem justificativa
-   - **Baseline**: 80% mínimo
-   - **Atual**: 100% (manter!)
-2. ✅ Testes estáveis e rápidos (evitar timeouts arbitrários)
+   - **Meta**: >= 70% (ideal: >= 80%)
+   - **Atual**: Em construção
+2. ✅ Testes estáveis e determinísticos (evitar flaky tests)
+3. ✅ Testes rápidos (async tests com timeout apropriado)
 
 ### Qualidade dos Testes
-3. ✅ Mocks devem refletir comportamento real da API
-4. ✅ Testar casos críticos: upload, fila, deep links, autenticação
-5. ✅ Cobrir edge cases: erros de rede, S3 falhas, tokens expirados
-6. ✅ Testes de services devem ser unitários
-7. ✅ Testes de components podem usar RTL
-8. ✅ Cada teste deve ter um único propósito (evitar test gods)
+4. ✅ Mocks devem refletir comportamento real das exchanges
+5. ✅ Testar casos críticos: order execution, position management, P&L calculation, backtesting
+6. ✅ Cobrir edge cases: network errors, API rate limits, invalid data, precision issues
+7. ✅ Testes de crates devem ser unitários (dependencies mockadas)
+8. ✅ Testes de integração para ExchangeGateway e Repository traits
+9. ✅ Cada teste deve ter um único propósito (evitar god tests)
+10. ✅ Usar `#[tokio::test]` para testes async
+11. ✅ Usar `Decimal` nos testes (nunca f64)
+12. ✅ Testes de precisão financeira críticos
 
 ## Workflows de Colaboração
 ```
@@ -69,35 +72,35 @@ QA usa testes → como base para manuais
 ```
 
 ## Prompt Padrão
-> Escreva testes claros cobrindo casos críticos (upload, fila, deep links, 
-> autenticação). Use Vitest para services/stores/utils, React Testing Library 
-> para components. Garanta que cobertura não cai. Teste cenários: 
-> sucesso, erro de rede, token expirado, validação falha, S3 timeout. 
-> Mocks devem ser realistas.
+> Escreva testes Rust claros cobrindo casos críticos (order execution, position management,
+> P&L calculation, backtesting, exchange integration). Use #[test] para testes síncronos,
+> #[tokio::test] para async. Mock dependencies com traits. Garanta que cobertura não cai.
+> Teste cenários: sucesso, network errors, API rate limits, invalid data, precision.
+> Sempre use Decimal para valores financeiros. Mocks devem ser realistas.
 
 ## Exemplos de Uso
 
 ### Exemplo 1: Testar nova feature
 ```
-"Criar testes para feature de filtro por data:
-- Testes unitários para lógica de filtro
-- Testes de componente DatePicker
-- Casos: data válida, inválida, range, limites
-- Manter cobertura >= 100%"
+"Criar testes para cálculo de P&L em positions:
+- Testes unitários para realized_pnl e unrealized_pnl
+- Testes de precisão com Decimal
+- Casos: long/short, com leverage, com fees
+- Manter cobertura >= 70%"
 ```
 
 ### Exemplo 2: Regression test
 ```
-"Criar teste de regressão para bug de upload de vídeos grandes:
-- Mock de vídeo >500MB
-- Simular timeout e retry
-- Validar exponential backoff
-- Confirmar sucesso após 3 tentativas"
+"Criar teste de regressão para bug de arredondamento em prices:
+- Mock candles com preços precisos (Decimal)
+- Testar indicadores com valores extremos
+- Validar que não há perda de precisão
+- Confirmar resultados corretos em 8 casas decimais"
 ```
 
 ### Exemplo 3: Cobertura caindo
 ```
-"Cobertura caiu de 100% para 87% após implementação de X.
+"Cobertura caiu de 75% para 62% após implementação de Kraken gateway.
 Identificar linhas não cobertas, criar testes para:
 - Branches não testados
 - Error handlers

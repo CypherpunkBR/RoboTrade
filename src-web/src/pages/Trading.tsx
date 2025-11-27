@@ -5,6 +5,8 @@ import type {
   OrderType,
   BalanceDto,
   RiskStats,
+  OrderDto,
+  PositionDto,
 } from '@/types';
 import {
   createOrder,
@@ -16,20 +18,44 @@ import {
   setTradingEnabled,
   resetDailyLosses,
   formatCurrency,
+  getOpenOrders,
+  getPositions,
+  cancelOrder,
 } from '@/lib/tauri';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { TradingChart } from '@/components/TradingChart';
+import { PositionsTable } from '@/components/PositionsTable';
+import { OrdersTable } from '@/components/OrdersTable';
 
-export function Trading() {
+const SYMBOLS = [
+  'BTCUSDT',
+  'ETHUSDT',
+  'BNBUSDT',
+  'SOLUSDT',
+  // 'XRPUSDT',
+  // 'ADAUSDT',
+  // 'DOGEUSDT',
+  // 'AVAXUSDT',
+];
+
+interface TradingProps {
+  initialSymbol?: string | null;
+  onSymbolUsed?: () => void;
+}
+
+export function Trading({ initialSymbol, onSymbolUsed }: TradingProps) {
   const [balances, setBalances] = useState<BalanceDto[]>([]);
   const [riskStats, setRiskStats] = useState<RiskStats | null>(null);
   const [workerRunning, setWorkerRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [positions, setPositions] = useState<PositionDto[]>([]);
 
   // Order form state
-  const [symbol, setSymbol] = useState('BTCUSDT');
+  const [symbol, setSymbol] = useState(initialSymbol || 'BTCUSDT');
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('market');
   const [quantity, setQuantity] = useState('0.001');
@@ -41,14 +67,18 @@ export function Trading() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [balancesData, riskData, running] = await Promise.all([
+      const [balancesData, riskData, running, ordersData, positionsData] = await Promise.all([
         getBalances(),
         getRiskStats(),
         isWorkerRunning(),
+        getOpenOrders(),
+        getPositions(),
       ]);
       setBalances(balancesData);
       setRiskStats(riskData);
       setWorkerRunning(running);
+      setOrders(ordersData);
+      setPositions(positionsData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
@@ -62,6 +92,14 @@ export function Trading() {
     const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Handle initial symbol from navigation
+  useEffect(() => {
+    if (initialSymbol) {
+      setSymbol(initialSymbol);
+      onSymbolUsed?.();
+    }
+  }, [initialSymbol, onSymbolUsed]);
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +167,22 @@ export function Trading() {
     }
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await cancelOrder(symbol, orderId);
+      setSuccess('Ordem cancelada');
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao cancelar ordem');
+    }
+  };
+
+  const handlePriceClick = (clickedPrice: number) => {
+    if (orderType !== 'market') {
+      setPrice(clickedPrice.toFixed(2));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -136,8 +190,6 @@ export function Trading() {
       </div>
     );
   }
-
-  const usdtBalance = balances.find(b => b.asset === 'USDT');
 
   return (
     <div className="space-y-6">
@@ -152,28 +204,49 @@ export function Trading() {
         </div>
       )}
 
+      {/* Chart Section */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle>Grafico - {symbol}</CardTitle>
+            {/* Symbol selector */}
+            <div className="flex gap-1 bg-muted rounded-md p-0.5">
+              {SYMBOLS.map((sym) => (
+                <button
+                  key={sym}
+                  onClick={() => setSymbol(sym)}
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                    symbol === sym
+                      ? 'bg-primary text-white'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {sym.replace('USDT', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <TradingChart
+            symbol={symbol}
+            interval="1h"
+            height={400}
+            orders={orders}
+            positions={positions}
+            onPriceClick={handlePriceClick}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Order Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Nova Ordem</CardTitle>
+            <CardTitle>Nova Ordem - {symbol}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitOrder} className="space-y-4">
-              {/* Symbol */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Par</label>
-                <select
-                  value={symbol}
-                  onChange={e => setSymbol(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="BTCUSDT">BTC/USDT</option>
-                  <option value="ETHUSDT">ETH/USDT</option>
-                  <option value="SOLUSDT">SOL/USDT</option>
-                  <option value="XRPUSDT">XRP/USDT</option>
-                </select>
-              </div>
 
               {/* Side */}
               <div>
@@ -383,6 +456,29 @@ export function Trading() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Positions and Orders Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Open Positions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Posicoes Abertas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PositionsTable positions={positions} />
+          </CardContent>
+        </Card>
+
+        {/* Open Orders */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Ordens Abertas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrdersTable orders={orders} onCancelOrder={handleCancelOrder} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

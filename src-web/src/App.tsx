@@ -3,18 +3,27 @@ import { Dashboard } from './pages/Dashboard';
 import { Trading } from './pages/Trading';
 import { History } from './pages/History';
 import { Charts } from './pages/Charts';
+import { Settings } from './pages/Settings';
+import { Reports } from './pages/Reports';
 import type { TradingMode, ConnectionStatus } from './types';
-import { getTradingMode, getConnectionStatus } from './lib/tauri';
+import { getTradingMode, getConnectionStatus, setTradingMode } from './lib/tauri';
 import { StatusIndicator } from './components/StatusIndicator';
 import { TradingModeSwitch } from './components/TradingModeSwitch';
-import { setTradingMode } from './lib/tauri';
+import { GlobalFilterDropdown } from './components/GlobalFilterDropdown';
 
-type Page = 'dashboard' | 'trading' | 'charts' | 'history';
+type Page = 'dashboard' | 'trading' | 'charts' | 'history' | 'reports' | 'settings';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [tradingMode, setTradingModeState] = useState<TradingMode>('paper');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
+  const [selectedTradingSymbol, setSelectedTradingSymbol] = useState<string | null>(null);
+
+  // Navigate to Trading page with a specific symbol
+  const navigateToTrading = (symbol: string) => {
+    setSelectedTradingSymbol(symbol);
+    setCurrentPage('trading');
+  };
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -49,6 +58,8 @@ function App() {
     { key: 'charts', label: 'Graficos' },
     { key: 'trading', label: 'Trading' },
     { key: 'history', label: 'Historico' },
+    { key: 'reports', label: 'Relatorios' },
+    { key: 'settings', label: 'Config' },
   ];
 
   return (
@@ -79,6 +90,7 @@ function App() {
             </div>
 
             <div className="flex items-center gap-4">
+              <GlobalFilterDropdown />
               <TradingModeSwitch
                 mode={tradingMode}
                 onModeChange={handleModeChange}
@@ -102,10 +114,17 @@ function App() {
 
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
-        {currentPage === 'dashboard' && <Dashboard />}
+        {currentPage === 'dashboard' && <Dashboard onNavigateToTrading={navigateToTrading} />}
         {currentPage === 'charts' && <Charts />}
-        {currentPage === 'trading' && <Trading />}
+        {currentPage === 'trading' && (
+          <Trading
+            initialSymbol={selectedTradingSymbol}
+            onSymbolUsed={() => setSelectedTradingSymbol(null)}
+          />
+        )}
         {currentPage === 'history' && <History />}
+        {currentPage === 'reports' && <Reports />}
+        {currentPage === 'settings' && <Settings />}
       </main>
     </div>
   );

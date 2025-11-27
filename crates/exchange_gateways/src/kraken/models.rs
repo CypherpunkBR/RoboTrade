@@ -223,19 +223,26 @@ pub struct Ticker {
     pub symbol: String,
     pub tag: Option<String>,
     pub pair: Option<String>,
-    pub mark_price: Option<String>,
-    pub bid: Option<String>,
-    pub bid_size: Option<String>,
-    pub ask: Option<String>,
-    pub ask_size: Option<String>,
-    pub vol24h: Option<String>,
-    pub open_interest: Option<String>,
-    pub last: Option<String>,
+    pub mark_price: Option<f64>,
+    pub bid: Option<f64>,
+    pub bid_size: Option<f64>,
+    pub ask: Option<f64>,
+    pub ask_size: Option<f64>,
+    pub vol24h: Option<f64>,
+    pub open_interest: Option<f64>,
+    pub last: Option<f64>,
     pub last_time: Option<String>,
-    pub last_size: Option<String>,
+    pub last_size: Option<f64>,
     pub suspended: Option<bool>,
-    pub funding_rate: Option<String>,
-    pub funding_rate_prediction: Option<String>,
+    pub funding_rate: Option<f64>,
+    pub funding_rate_prediction: Option<f64>,
+    pub open24h: Option<f64>,
+    pub high24h: Option<f64>,
+    pub low24h: Option<f64>,
+    pub change24h: Option<f64>,
+    pub index_price: Option<f64>,
+    pub volume_quote: Option<f64>,
+    pub post_only: Option<bool>,
 }
 
 /// Orderbook
@@ -253,14 +260,14 @@ pub struct OrderbookData {
     pub asks: Vec<Vec<String>>,
 }
 
-/// Candle/OHLC
+/// Candle/OHLC (resposta da API /derivatives/api/v3/candles - não funciona mais)
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CandlesResponse {
     pub candles: Vec<KrakenCandle>,
 }
 
-/// Candle individual
+/// Candle individual (formato antigo)
 #[derive(Debug, Clone, Deserialize)]
 pub struct KrakenCandle {
     pub time: i64,
@@ -271,42 +278,94 @@ pub struct KrakenCandle {
     pub volume: String,
 }
 
+/// Resposta da Charts API (/api/charts/v1/trade/{symbol}/{resolution})
+/// Formato igual ao CandlesResponse - usa mesmo KrakenCandle
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChartsResponse {
+    pub candles: Vec<KrakenCandle>,
+}
+
 // =============================================================================
 // Instruments
 // =============================================================================
 
-/// Lista de instrumentos
+/// Lista de instrumentos (wrapper para KrakenResponse)
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Instruments {
     pub instruments: Vec<Instrument>,
 }
 
-/// Instrumento (contrato futuro)
+/// Resposta direta da API de instrumentos (sem KrakenResponse genérico)
+/// Necessário porque #[serde(flatten)] + Option<T> pode engolir erros de parsing
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct InstrumentsResponse {
+    pub result: String,
+    #[serde(default)]
+    pub instruments: Vec<Instrument>,
+    pub error: Option<String>,
+    pub server_time: Option<String>,
+}
+
+/// Instrumento (contrato futuro)
+/// Usa default para campos opcionais e ignora campos desconhecidos da API
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct Instrument {
+    #[serde(default)]
     pub symbol: String,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", default)]
     pub instrument_type: String,
+    #[serde(default)]
     pub underlying: Option<String>,
-    pub tick_size: Option<String>,
-    pub contract_size: Option<String>,
+    #[serde(default)]
+    pub tick_size: Option<f64>,
+    #[serde(default)]
+    pub contract_size: Option<f64>,
+    #[serde(default)]
     pub tradeable: bool,
+    #[serde(default)]
     pub margin_levels: Option<Vec<MarginLevel>>,
-    pub max_position_size: Option<String>,
+    #[serde(default)]
+    pub max_position_size: Option<f64>,
+    #[serde(default)]
     pub opening_date: Option<String>,
-    pub funding_rate_coefficient: Option<String>,
-    pub max_relative_funding_rate: Option<String>,
+    #[serde(default)]
+    pub funding_rate_coefficient: Option<f64>,
+    #[serde(default)]
+    pub max_relative_funding_rate: Option<f64>,
+    #[serde(default)]
+    pub impact_mid_size: Option<f64>,
+    #[serde(default)]
+    pub isin: Option<String>,
+    #[serde(default)]
+    pub base: Option<String>,
+    #[serde(default)]
+    pub quote: Option<String>,
+    #[serde(default)]
+    pub pair: Option<String>,
+    #[serde(default)]
+    pub post_only: Option<bool>,
+    #[serde(default)]
+    pub mtf: Option<bool>,
 }
 
 /// Nível de margem
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// Alguns instrumentos usam `contracts`, outros usam `numNonContractUnits`
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct MarginLevel {
-    pub contracts: i64,
-    pub initial_margin: String,
-    pub maintenance_margin: String,
+    /// Número de contratos (usado por futures_inverse)
+    #[serde(default)]
+    pub contracts: Option<i64>,
+    /// Número de unidades não-contrato (usado por flexible_futures)
+    #[serde(default)]
+    pub num_non_contract_units: Option<f64>,
+    #[serde(default)]
+    pub initial_margin: f64,
+    #[serde(default)]
+    pub maintenance_margin: f64,
 }
 
 // =============================================================================

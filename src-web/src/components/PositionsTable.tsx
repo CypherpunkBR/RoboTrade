@@ -5,9 +5,16 @@ import { Badge } from './ui/badge';
 interface PositionsTableProps {
   positions: PositionDto[];
   onClosePosition?: (id: string) => void;
+  onSymbolClick?: (symbol: string) => void;
 }
 
-export function PositionsTable({ positions, onClosePosition }: PositionsTableProps) {
+const exchangeLabels: Record<string, string> = {
+  paper: 'Paper',
+  binance_futures: 'Binance',
+  kraken_futures: 'Kraken',
+};
+
+export function PositionsTable({ positions, onClosePosition, onSymbolClick }: PositionsTableProps) {
   if (positions.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -21,6 +28,7 @@ export function PositionsTable({ positions, onClosePosition }: PositionsTablePro
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border">
+            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Exchange</th>
             <th className="text-left py-3 px-2 font-medium text-muted-foreground">Par</th>
             <th className="text-left py-3 px-2 font-medium text-muted-foreground">Lado</th>
             <th className="text-right py-3 px-2 font-medium text-muted-foreground">Tamanho</th>
@@ -33,7 +41,12 @@ export function PositionsTable({ positions, onClosePosition }: PositionsTablePro
         </thead>
         <tbody>
           {positions.map((position) => (
-            <tr key={position.id} className="border-b border-border/50 hover:bg-secondary/30">
+            <tr
+              key={position.id}
+              className={`border-b border-border/50 hover:bg-secondary/30 ${onSymbolClick ? 'cursor-pointer' : ''}`}
+              onClick={() => onSymbolClick?.(position.symbol)}
+            >
+              <td className="py-3 px-2 text-muted-foreground">{exchangeLabels[position.exchange] || position.exchange}</td>
               <td className="py-3 px-2 font-medium">{position.symbol}</td>
               <td className="py-3 px-2">
                 <Badge variant={position.side === 'long' ? 'success' : 'destructive'}>
@@ -60,7 +73,10 @@ export function PositionsTable({ positions, onClosePosition }: PositionsTablePro
               <td className="text-center py-3 px-2">
                 {onClosePosition && (
                   <button
-                    onClick={() => onClosePosition(position.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClosePosition(position.id);
+                    }}
                     className="text-xs text-destructive hover:text-destructive/80 font-medium"
                   >
                     Fechar

@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { DashboardSummary, PositionDto, OrderDto } from '@/types';
+import type { DashboardSummary, PositionDto, OrderDto, BalanceDto } from '@/types';
 import {
   getDashboardSummary,
   getPositions,
   getOpenOrders,
+  getBalances,
   cancelOrder,
   formatCurrency,
   formatPercent,
@@ -13,24 +14,32 @@ import { FearGreedGauge } from '@/components/FearGreedGauge';
 import { PositionsTable } from '@/components/PositionsTable';
 import { OrdersTable } from '@/components/OrdersTable';
 import { StatsCard } from '@/components/StatsCard';
+import { BalanceHoverCard } from '@/components/BalanceHoverCard';
 
-export function Dashboard() {
+interface DashboardProps {
+  onNavigateToTrading?: (symbol: string) => void;
+}
+
+export function Dashboard({ onNavigateToTrading }: DashboardProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [positions, setPositions] = useState<PositionDto[]>([]);
   const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [balances, setBalances] = useState<BalanceDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [summaryData, positionsData, ordersData] = await Promise.all([
+      const [summaryData, positionsData, ordersData, balancesData] = await Promise.all([
         getDashboardSummary(),
         getPositions(),
         getOpenOrders(),
+        getBalances(),
       ]);
       setSummary(summaryData);
       setPositions(positionsData);
       setOrders(ordersData);
+      setBalances(balancesData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
@@ -96,9 +105,9 @@ export function Dashboard() {
 
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Saldo Total"
-          value={summary ? formatCurrency(summary.total_balance_usdt) : '-'}
+        <BalanceHoverCard
+          totalBalance={summary ? parseFloat(summary.total_balance_usdt) : 0}
+          balances={balances}
         />
         <StatsCard
           title="PnL Diario"
@@ -141,6 +150,7 @@ export function Dashboard() {
             <PositionsTable
               positions={positions}
               onClosePosition={handleClosePosition}
+              onSymbolClick={onNavigateToTrading}
             />
           </CardContent>
         </Card>
@@ -155,6 +165,7 @@ export function Dashboard() {
           <OrdersTable
             orders={orders}
             onCancelOrder={handleCancelOrder}
+            onSymbolClick={onNavigateToTrading}
           />
         </CardContent>
       </Card>

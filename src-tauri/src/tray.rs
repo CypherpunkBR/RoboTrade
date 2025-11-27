@@ -47,8 +47,8 @@ pub fn setup_tray<R: Runtime>(app: &App<R>) -> Result<(), Box<dyn std::error::Er
     )?;
 
     // Carrega o ícone do tray (embutido em compile time)
-    // O ícone é carregado de src-tauri/icons/icon.png
-    let icon = include_bytes!("../icons/icon.png");
+    // Ícone de Bitcoin para o tray
+    let icon = include_bytes!("../icons/tray-icon.png");
     let icon_image = Image::from_bytes(icon).map_err(|e| {
         error!("Erro ao carregar ícone do tray: {}", e);
         e

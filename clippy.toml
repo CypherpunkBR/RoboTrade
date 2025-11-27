@@ -1,31 +1,32 @@
-# Clippy Configuration - Regras Rigorosas
-# Similar a ESLint/SonarQube para JavaScript
+# Configuração do Clippy para RoboTrade
+# Automated trading robot for cryptocurrency futures
+# Based on Banlek Uploader 2 quality standards
 
 # ===== COMPLEXIDADE E TAMANHO =====
 
-# Complexidade cognitiva máxima: 15
+# Complexidade cognitiva: 15 (match SonarJS standards)
 cognitive-complexity-threshold = 15
 
 # Máximo de linhas por função: 100
 too-many-lines-threshold = 100
 
-# Máximo de argumentos por função: 7 (financeiro precisa de mais campos)
-too-many-arguments-threshold = 7
+# Máximo de argumentos: 5
+too-many-arguments-threshold = 5
+
+# ===== CÓDIGO VERBOSO =====
+
+# Tamanho máximo de nomes de variáveis: 50 caracteres
+max-suggested-slice-pattern-length = 3
 
 # ===== OBSERVAÇÕES =====
 
-# Clippy não tem equivalente direto a:
-# - max-lines-per-file (verificar em code review)
-# - max-statements por função
-# - max-nested-callbacks
-#
-# Compensamos com regras rigorosas via flags:
-# cargo clippy -- -D warnings -W clippy::all -W clippy::pedantic -W clippy::nursery -W clippy::cargo
+# Clippy não tem equivalente a:
+# - max-lines-per-file (500)
+# - max-statements (30)
+# - max-nested-callbacks (3)
+# Estes devem ser verificados em code review manual
 
-# ===== EXCEÇÕES PERMITIDAS =====
+# ===== LINTS RIGOROSOS =====
 
-# Permite nomes de variáveis curtos em closures e iteradores
-single-char-binding-names-threshold = 4
-
-# Permite alguns padrões comuns em Rust
-msrv = "1.70.0"
+# Todos os lints do Clippy como ERRORS
+# Run with: cargo clippy -- -D warnings -W clippy::all -W clippy::pedantic -W clippy::nursery -W clippy::cargo

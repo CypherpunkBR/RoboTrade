@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TradingChart } from '@/components/TradingChart';
 import { PriceAlerts } from '@/components/PriceAlerts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import type { OrderDto, PositionDto } from '@/types';
+import { getOpenOrders, getPositions } from '@/lib/tauri';
 
 const SYMBOLS = [
   'BTCUSDT',
@@ -17,6 +19,29 @@ const SYMBOLS = [
 export function Charts() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [alertPrice, setAlertPrice] = useState<number | undefined>();
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [positions, setPositions] = useState<PositionDto[]>([]);
+
+  // Fetch orders and positions
+  const fetchOrdersAndPositions = useCallback(async () => {
+    try {
+      const [ordersData, positionsData] = await Promise.all([
+        getOpenOrders(),
+        getPositions(),
+      ]);
+      setOrders(ordersData);
+      setPositions(positionsData);
+    } catch (err) {
+      console.error('Error fetching orders/positions:', err);
+    }
+  }, []);
+
+  // Fetch on mount and periodically
+  useEffect(() => {
+    fetchOrdersAndPositions();
+    const interval = setInterval(fetchOrdersAndPositions, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, [fetchOrdersAndPositions]);
 
   // Called when user clicks on chart to set alert price
   const handlePriceClick = (price: number) => {
@@ -58,6 +83,8 @@ export function Charts() {
               symbol={selectedSymbol}
               interval="1h"
               height={550}
+              orders={orders}
+              positions={positions}
               onPriceClick={handlePriceClick}
             />
             <p className="mt-2 text-xs text-muted-foreground">

@@ -23,9 +23,18 @@ crates/exchange_gateways/src/
 
 | Gateway | Status | Descrição |
 |---------|--------|-----------|
-| BinanceFuturesClient | ✅ Completo | REST API completa para Binance Futures |
-| KrakenFuturesClient | ✅ Completo | REST API completa para Kraken Futures |
+| BinanceFuturesClient | ✅ Funcional | REST API completa para Binance Futures |
+| KrakenFuturesClient | ⚠️ Auth Error | REST API implementada, mas erro de autenticação |
 | PaperTradingClient | 📋 Pendente | Simulador local (não implementado) |
+
+### Problemas Conhecidos
+
+**Kraken Futures**: A API retorna `authenticationError` mesmo com credenciais válidas. Possíveis causas:
+- Formato de assinatura HMAC diferente do esperado
+- Endpoint demo (`demo-futures.kraken.com`) pode requerer configuração específica
+- Timestamp ou nonce em formato incorreto
+
+Veja [CURRENT_STATUS.md](../CURRENT_STATUS.md) para detalhes e próximos passos.
 
 ## Binance Futures Client
 
@@ -186,6 +195,23 @@ pub struct BinancePositionResponse {
     pub position_side: String,
 }
 ```
+
+### Pares Monitorados para Histórico
+
+O comando `get_fill_history` busca trades dos seguintes pares:
+
+| Par | Descrição |
+|-----|-----------|
+| BTCUSDT | Bitcoin/Tether |
+| ETHUSDT | Ethereum/Tether |
+| BNBUSDT | Binance Coin/Tether |
+| SOLUSDT | Solana/Tether |
+| XRPUSDT | Ripple/Tether |
+| DOGEUSDT | Dogecoin/Tether |
+| ADAUSDT | Cardano/Tether |
+| AVAXUSDT | Avalanche/Tether |
+| LINKUSDT | Chainlink/Tether |
+| DOTUSDT | Polkadot/Tether |
 
 ### Configurações Padrão
 

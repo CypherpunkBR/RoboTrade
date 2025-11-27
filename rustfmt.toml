@@ -1,13 +1,13 @@
-# Rust Formatting Config
+# Rust Formatting Config for RoboTrade
 # Reference: https://rust-lang.github.io/rustfmt/
 # STABLE FEATURES ONLY (no nightly required)
 
-# ===== CRITICAL FORMATTING =====
+# ===== CRITICAL: Consistent Formatting =====
 edition = "2021"
-max_width = 100
-hard_tabs = false
-tab_spaces = 4
-newline_style = "Unix"
+max_width = 100              # Maximum line width
+hard_tabs = false            # Use spaces
+tab_spaces = 2               # 2 spaces per indentation level
+newline_style = "Unix"       # LF only
 
 # ===== STABLE FEATURES =====
 use_field_init_shorthand = true
@@ -16,11 +16,15 @@ force_explicit_abi = true
 reorder_imports = true
 reorder_modules = true
 
-# Note: Many rustfmt features require nightly Rust.
-# The configuration above uses only stable features.
+# Note: Many rustfmt features (imports_granularity, brace_style, trailing_comma, etc.)
+# require nightly Rust. The configuration above uses only stable features.
+# The most important setting is tab_spaces = 2 for consistency.
 #
 # To use unstable features, switch to nightly and add:
 # - imports_granularity = "Crate"
 # - group_imports = "StdExternalCrate"
 # - brace_style = "SameLineWhere"
+# - control_brace_style = "AlwaysSameLine"
 # - trailing_comma = "Vertical"
+# - fn_single_line = false
+# - where_single_line = false

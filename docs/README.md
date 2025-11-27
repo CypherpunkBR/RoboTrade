@@ -191,5 +191,15 @@ docs/
 
 ---
 
+## Changelog Recente
+
+### 2025-11-27
+- Melhorado histórico de trades com busca de 10 pares (BTC, ETH, BNB, SOL, XRP, DOGE, ADA, AVAX, LINK, DOT)
+- Frontend History.tsx usa `Promise.allSettled` para tratamento de erros independente
+- Documentado problema de autenticação do Kraken Futures
+- Adicionados novos estados: PnLState, ReconciliationState, SyncState
+
+---
+
 **Versão do Projeto**: 0.1.0
 **Última Atualização**: 2025-11-27

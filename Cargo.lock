@@ -3840,6 +3840,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dotenvy",
+ "futures",
  "once_cell",
  "parking_lot",
  "robotrade-core",
@@ -3851,6 +3852,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "sqlx",
  "tauri",
  "tauri-build",
  "tauri-plugin-notification",
@@ -3858,6 +3860,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 interface OrdersTableProps {
   orders: OrderDto[];
   onCancelOrder?: (id: string, symbol: string) => void;
+  onSymbolClick?: (symbol: string) => void;
 }
 
 const orderTypeLabels: Record<string, string> = {
@@ -26,7 +27,13 @@ const orderStatusVariant: Record<string, 'default' | 'secondary' | 'success' | '
   expired: 'secondary',
 };
 
-export function OrdersTable({ orders, onCancelOrder }: OrdersTableProps) {
+const exchangeLabels: Record<string, string> = {
+  paper: 'Paper',
+  binance_futures: 'Binance',
+  kraken_futures: 'Kraken',
+};
+
+export function OrdersTable({ orders, onCancelOrder, onSymbolClick }: OrdersTableProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -40,6 +47,7 @@ export function OrdersTable({ orders, onCancelOrder }: OrdersTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border">
+            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Exchange</th>
             <th className="text-left py-3 px-2 font-medium text-muted-foreground">Par</th>
             <th className="text-left py-3 px-2 font-medium text-muted-foreground">Tipo</th>
             <th className="text-left py-3 px-2 font-medium text-muted-foreground">Lado</th>
@@ -51,7 +59,12 @@ export function OrdersTable({ orders, onCancelOrder }: OrdersTableProps) {
         </thead>
         <tbody>
           {orders.map((order) => (
-            <tr key={order.id} className="border-b border-border/50 hover:bg-secondary/30">
+            <tr
+              key={order.id}
+              className={`border-b border-border/50 hover:bg-secondary/30 ${onSymbolClick ? 'cursor-pointer' : ''}`}
+              onClick={() => onSymbolClick?.(order.symbol)}
+            >
+              <td className="py-3 px-2 text-muted-foreground">{exchangeLabels[order.exchange] || order.exchange}</td>
               <td className="py-3 px-2 font-medium">{order.symbol}</td>
               <td className="py-3 px-2">{orderTypeLabels[order.order_type] || order.order_type}</td>
               <td className="py-3 px-2">
@@ -71,7 +84,10 @@ export function OrdersTable({ orders, onCancelOrder }: OrdersTableProps) {
               <td className="text-center py-3 px-2">
                 {onCancelOrder && (order.status === 'open' || order.status === 'pending') && (
                   <button
-                    onClick={() => onCancelOrder(order.id, order.symbol)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCancelOrder(order.id, order.symbol);
+                    }}
                     className="text-xs text-destructive hover:text-destructive/80 font-medium"
                   >
                     Cancelar

@@ -5,6 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "pnpm --filter src-web dev",
+    "dev:tauri": "pnpm --filter src-web tauri dev",
+    "build": "pnpm --filter src-web build",
+    "build:tauri": "pnpm --filter src-web tauri build",
+    "tauri": "pnpm --filter src-web tauri",
+    "tauri:dev": "pnpm run dev:tauri",
+    "tauri:build": "pnpm run build:tauri",
     "prepare": "husky install",
     "rust:check": "cargo check --workspace --all-targets --all-features",
     "rust:build": "cargo build --workspace",

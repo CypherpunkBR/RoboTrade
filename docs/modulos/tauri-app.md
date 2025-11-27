@@ -113,16 +113,26 @@ async fn set_trading_mode(
 ### Histórico
 
 ```rust
-/// Obtém histórico de trades
+/// Obtém histórico de trades completos (posições fechadas)
 #[tauri::command]
 async fn get_trade_history(
     state: State<'_, AppState>,
-    limit: u32,
-) -> Result<Vec<Trade>, String>;
+    symbol: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<TradeDto>, String>;
 
 /// Obtém estatísticas de trades
 #[tauri::command]
-async fn get_trade_stats(state: State<'_, AppState>) -> Result<TradeStats, String>;
+async fn get_trade_stats(state: State<'_, AppState>) -> Result<TradeStatsDto, String>;
+
+/// Obtém histórico de fills/execuções das exchanges
+/// Busca de 10 pares principais: BTC, ETH, BNB, SOL, XRP, DOGE, ADA, AVAX, LINK, DOT
+#[tauri::command]
+async fn get_fill_history(
+    state: State<'_, AppState>,
+    symbol: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<FillDto>, String>;
 ```
 
 ## Estado da Aplicação

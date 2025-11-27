@@ -5,15 +5,25 @@
 
 mod commands;
 mod exchange_service;
+mod ledger_commands;
+mod ledger_state;
 mod market_data_service;
+mod pnl_state;
+mod reconciliation_state;
 mod state;
+mod sync_state;
 mod trading_worker;
 mod tray;
 
 pub use commands::*;
 pub use exchange_service::*;
+pub use ledger_commands::*;
+pub use ledger_state::*;
 pub use market_data_service::*;
+pub use pnl_state::*;
+pub use reconciliation_state::*;
 pub use state::*;
+pub use sync_state::*;
 pub use trading_worker::*;
 pub use tray::*;
 
@@ -199,6 +209,7 @@ pub fn run() {
             // Histórico
             commands::get_trade_history,
             commands::get_trade_stats,
+            commands::get_fill_history,
             // Trading Worker
             commands::start_trading_worker,
             commands::stop_trading_worker,
@@ -217,6 +228,41 @@ pub fn run() {
             commands::delete_price_alert,
             commands::disable_price_alert,
             commands::enable_price_alert,
+            // User Preferences
+            commands::get_user_preferences,
+            commands::save_user_preferences,
+            commands::get_available_currencies,
+            // Ledger
+            ledger_commands::get_ledger_entries,
+            ledger_commands::get_ledger_balance,
+            ledger_commands::get_all_ledger_balances,
+            ledger_commands::get_ledger_summary,
+            ledger_commands::count_ledger_entries,
+            // P&L
+            ledger_commands::get_open_tax_lots,
+            ledger_commands::get_realized_pnl,
+            ledger_commands::calculate_unrealized_pnl,
+            ledger_commands::get_pnl_summary,
+            ledger_commands::set_cost_basis_method,
+            // Sync
+            ledger_commands::start_sync,
+            ledger_commands::stop_sync,
+            ledger_commands::pause_sync,
+            ledger_commands::resume_sync,
+            ledger_commands::get_sync_state,
+            ledger_commands::get_all_sync_states,
+            ledger_commands::reset_sync,
+            // Reconciliation
+            ledger_commands::run_reconciliation,
+            ledger_commands::get_recent_reconciliations,
+            ledger_commands::get_reconciliation_snapshot,
+            ledger_commands::get_discrepancy_history,
+            ledger_commands::get_reconciliation_health,
+            // Reports
+            ledger_commands::generate_tax_report,
+            ledger_commands::generate_monthly_report,
+            ledger_commands::generate_symbol_report,
+            ledger_commands::export_report_csv,
         ])
         .run(tauri::generate_context!())
         .expect("Erro ao executar aplicação Tauri");

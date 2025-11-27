@@ -124,6 +124,19 @@ export interface TradeStatsDto {
   total_fees: string;
 }
 
+export interface FillDto {
+  id: string;
+  exchange: string;
+  symbol: string;
+  side: string;
+  price: string;
+  quantity: string;
+  fee: string;
+  fee_asset: string;
+  realized_pnl: string | null;
+  timestamp: string;
+}
+
 export interface CreateOrderRequest {
   symbol: string;
   side: OrderSide;
@@ -250,3 +263,79 @@ export interface CreatePriceAlertRequest {
   message?: string;
   recurring: boolean;
 }
+
+// Report types
+export type ReportPeriod = 'day' | 'week' | 'month' | 'all';
+
+export interface PnLDataPoint {
+  time: number;
+  value: number;
+  cumulative: number;
+}
+
+export interface SymbolPnL {
+  symbol: string;
+  totalPnl: number;
+  tradeCount: number;
+  winCount: number;
+  lossCount: number;
+  winRate: number;
+}
+
+// EquityPoint for reports (numeric)
+export interface ReportEquityPoint {
+  time: number;
+  equity: number;
+}
+
+// User Preferences
+export interface UserPreferences {
+  default_exchange: string;
+  default_currency: string;
+}
+
+// Extended AppConfig with all sections
+export interface FullAppConfig {
+  general: GeneralConfig;
+  trading: TradingConfig;
+  data_collection: DataCollectionConfig;
+  notifications: NotificationConfig;
+  logging: LoggingConfig;
+  exchange: ExchangeConfig;
+  user_preferences?: UserPreferences;
+}
+
+export interface GeneralConfig {
+  theme: string;
+  language: string;
+  start_minimized: boolean;
+  start_with_system: boolean;
+}
+
+export interface DataCollectionConfig {
+  fear_greed_interval_mins: number;
+  candle_interval_secs: number;
+  symbols: string[];
+  timeframes: string[];
+  candle_history_days: number;
+}
+
+export interface NotificationConfig {
+  enabled: boolean;
+  sounds_enabled: boolean;
+  notify_signals: boolean;
+  notify_orders: boolean;
+  notify_positions: boolean;
+  notify_errors: boolean;
+}
+
+export interface LoggingConfig {
+  level: string;
+  file_logging: boolean;
+  retention_days: number;
+  json_format: boolean;
+}
+
+// Filter types
+export type ExchangeFilter = 'all' | 'binance' | 'kraken' | 'paper';
+export type CurrencyFilter = 'all' | string;

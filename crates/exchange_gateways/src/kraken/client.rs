@@ -259,10 +259,18 @@ impl KrakenFuturesClient {
 
     /// Busca lista de instrumentos disponíveis
     pub async fn get_instruments(&self) -> ExchangeResult<Vec<Instrument>> {
-        let response: KrakenResponse<Instruments> =
-            self.get_public("/instruments", &[]).await?;
+        // Usa InstrumentsResponse direta para evitar problemas com #[serde(flatten)] + Option<T>
+        let response: InstrumentsResponse = self.get_public("/instruments", &[]).await?;
 
-        Ok(response.data.map(|d| d.instruments).unwrap_or_default())
+        if response.result != "success" {
+            return Err(ExchangeError::ApiError {
+                exchange: "kraken".into(),
+                code: 0,
+                message: response.error.unwrap_or_else(|| "Unknown error".into()),
+            });
+        }
+
+        Ok(response.instruments)
     }
 
     /// Busca tickers de um ou mais símbolos
@@ -301,6 +309,7 @@ impl KrakenFuturesClient {
     }
 
     /// Busca candles/OHLC
+    /// Usa a API de Charts: /api/charts/v1/trade/{symbol}/{resolution}
     pub async fn get_candles(
         &self,
         symbol: &str,
@@ -308,29 +317,62 @@ impl KrakenFuturesClient {
         from: Option<i64>,
         to: Option<i64>,
     ) -> ExchangeResult<Vec<Candle>> {
-        let mut params = vec![
-            ("symbol", symbol.to_string()),
-            ("interval", interval.as_api_str().to_string()),
-        ];
+        // A API de charts usa um endpoint diferente: /api/charts/v1/trade/{symbol}/{resolution}
+        let resolution = interval.as_api_str();
+        let url = format!(
+            "{}/api/charts/v1/trade/{}/{}",
+            self.base_url, symbol, resolution
+        );
 
-        if let Some(f) = from {
-            params.push(("from", f.to_string()));
+        let mut request = self.client.get(&url);
+
+        // Adiciona parâmetros opcionais
+        if from.is_some() || to.is_some() {
+            let mut params = Vec::new();
+            if let Some(f) = from {
+                params.push(("from", f.to_string()));
+            }
+            if let Some(t) = to {
+                params.push(("to", t.to_string()));
+            }
+            let params_ref: Vec<(&str, &str)> =
+                params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+            request = request.query(&params_ref);
         }
-        if let Some(t) = to {
-            params.push(("to", t.to_string()));
+
+        let response = request.send().await.map_err(|e| ExchangeError::ApiError {
+            exchange: "kraken".into(),
+            code: 0,
+            message: e.to_string(),
+        })?;
+
+        let status = response.status();
+        let body = response.text().await.map_err(|e| ExchangeError::ApiError {
+            exchange: "kraken".into(),
+            code: 0,
+            message: format!("Erro ao ler resposta: {}", e),
+        })?;
+
+        if !status.is_success() {
+            return Err(ExchangeError::ApiError {
+                exchange: "kraken".into(),
+                code: status.as_u16() as i32,
+                message: body,
+            });
         }
 
-        let params_ref: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+        // A API de charts retorna formato: { candles: [...] }
+        let charts_response: ChartsResponse =
+            serde_json::from_str(&body).map_err(|e| ExchangeError::ApiError {
+                exchange: "kraken".into(),
+                code: 0,
+                message: format!("Erro ao parsear resposta: {} - Body: {}", e, body),
+            })?;
 
-        let response: KrakenResponse<CandlesResponse> =
-            self.get_public("/candles", &params_ref).await?;
-
-        let candles = response
-            .data
-            .map(|d| d.candles)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|kc| self.convert_candle(&kc))
+        let candles = charts_response
+            .candles
+            .iter()
+            .map(|kc| self.convert_candle(kc))
             .collect();
 
         Ok(candles)

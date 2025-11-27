@@ -1,0 +1,135 @@
+# Cursor IDE Rules for RoboTrade
+
+## Architecture Constraints
+
+1. **core crate NEVER depends on other internal crates**
+   - Only external dependencies allowed
+   - All other crates can depend on core
+   - Violation = architecture broken
+
+2. **Layered dependencies only**
+   - core → (no internal deps)
+   - infra → core
+   - other crates → core + infra
+   - src-tauri → all crates
+
+## Code Quality Rules
+
+1. **Financial precision is CRITICAL**
+   - ALWAYS use `rust_decimal::Decimal` for money/prices
+   - NEVER use f32 or f64 for financial calculations
+   - Violation = precision loss, incorrect P&L
+
+2. **No unwrap() in production code**
+   - Use `?` operator or proper error handling
+   - unwrap() only allowed in tests
+   - Violation = potential panic in production
+
+3. **All async code uses tokio**
+   - `#[tokio::test]` for async tests
+   - Never mix async runtimes
+   - Violation = runtime conflicts
+
+4. **UTC timestamps only**
+   - Use `chrono::DateTime<Utc>`
+   - Never use local time
+   - Violation = timezone bugs
+
+5. **Type-safe database queries**
+   - Use `sqlx::query!` or `sqlx::query_as!` macros
+   - Compile-time verification
+   - Violation = runtime SQL errors
+
+## Trading Domain Rules
+
+1. **Symbols always UPPERCASE**
+   - "BTCUSDT" not "btcusdt"
+   - Exchanges expect uppercase
+   - Violation = API errors
+
+2. **Validate leverage before sending**
+   - Binance: 1-125x
+   - Kraken: different limits
+   - Violation = API rejection
+
+3. **Always validate stop loss and take profit**
+   - SL must be below entry (long) or above (short)
+   - TP must be above entry (long) or below (short)
+   - Violation = invalid orders
+
+## Testing Rules
+
+1. **Every public function needs tests**
+   - Unit tests for logic
+   - Integration tests for traits
+   - Violation = untested code
+
+2. **Use Decimal in tests**
+   - No f64 even in test data
+   - Violation = false positives
+
+3. **Mock external dependencies**
+   - Don't hit real APIs in tests
+   - Use test doubles
+   - Violation = flaky tests
+
+## Documentation Rules
+
+1. **Public items must have docs**
+   - `/// Documentation` for pub fn/struct/enum
+   - Explain what, not how
+   - Violation = poor DX
+
+2. **Update docs when code changes**
+   - Stale docs worse than no docs
+   - Check ADRs when making decisions
+   - Violation = confusion
+
+## Git Commit Rules
+
+1. **Follow conventional commits**
+   - feat:, fix:, chore:, docs:, test:
+   - Example: "feat: add Kraken Futures client"
+   - Violation = messy history
+
+2. **Update CHANGELOG.md**
+   - Keep a Changelog format
+   - Add entry for user-facing changes
+   - Violation = missing release notes
+
+## Performance Rules
+
+1. **Avoid unnecessary clones**
+   - Use &[T] instead of Vec<T> in parameters
+   - Clone only when ownership needed
+   - Violation = unnecessary allocations
+
+2. **Pre-allocate vectors when size known**
+   - `Vec::with_capacity(n)`
+   - Violation = multiple reallocations
+
+3. **Use iterators over loops**
+   - More idiomatic and often faster
+   - Violation = verbose code
+
+## Security Rules
+
+1. **Never hardcode secrets**
+   - Use environment variables
+   - Use config files (not committed)
+   - Violation = security breach
+
+2. **Validate all external input**
+   - API responses
+   - User input
+   - File contents
+   - Violation = potential exploits
+
+3. **Rate limit API calls**
+   - Use governor crate
+   - Respect exchange limits
+   - Violation = account ban
+
+---
+
+**Enforce these rules in code review and CI/CD**

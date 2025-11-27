@@ -8,9 +8,14 @@ use robotrade_infra::database::DbPool;
 use robotrade_infra::repositories::SqliteFearGreedRepository;
 use rust_decimal::Decimal;
 use std::sync::Arc;
+use tracing::debug;
 
 use crate::exchange_service::ExchangeService;
+use crate::ledger_state::LedgerState;
 use crate::market_data_service::MarketDataService;
+use crate::pnl_state::PnLState;
+use crate::reconciliation_state::ReconciliationState;
+use crate::sync_state::SyncState;
 use crate::trading_worker::TradingWorker;
 
 /// Estado compartilhado da aplicação
@@ -24,6 +29,14 @@ pub struct AppState {
     pub trading_worker: TradingWorker,
     /// Serviço de dados de mercado
     pub market_data: MarketDataService,
+    /// Estado do ledger (serviços de ledger)
+    pub ledger: LedgerState,
+    /// Estado de P&L (cálculo de ganhos/perdas)
+    pub pnl: PnLState,
+    /// Estado de reconciliação
+    pub reconciliation: ReconciliationState,
+    /// Estado de sincronização
+    pub sync: SyncState,
 }
 
 /// Dados internos do estado
@@ -67,11 +80,33 @@ impl AppState {
             db_pool: Arc::new(RwLock::new(None)),
             trading_worker: TradingWorker::new(),
             market_data: MarketDataService::new(),
+            ledger: LedgerState::new(),
+            pnl: PnLState::new(),
+            reconciliation: ReconciliationState::new(),
+            sync: SyncState::new(),
         }
     }
 
-    /// Define o pool do banco de dados
+    /// Define o pool do banco de dados e inicializa serviços dependentes
     pub fn set_db_pool(&self, pool: DbPool) {
+        debug!("Inicializando serviços com pool do banco de dados");
+
+        // Inicializa o LedgerState com o pool
+        self.ledger.initialize(pool.clone());
+
+        // Inicializa o PnLState com o pool
+        self.pnl.initialize(pool.clone());
+
+        // Inicializa o ReconciliationState com todas as dependências
+        self.reconciliation.initialize(
+            pool.clone(),
+            self.exchange.clone(),
+            self.ledger.clone(),
+        );
+
+        // Inicializa o SyncState com o pool e exchange service
+        self.sync.initialize(pool.clone(), self.exchange.clone());
+
         *self.db_pool.write() = Some(pool);
     }
 
@@ -212,6 +247,10 @@ impl Clone for AppState {
             db_pool: Arc::clone(&self.db_pool),
             trading_worker: self.trading_worker.clone(),
             market_data: self.market_data.clone(),
+            ledger: self.ledger.clone(),
+            pnl: self.pnl.clone(),
+            reconciliation: self.reconciliation.clone(),
+            sync: self.sync.clone(),
         }
     }
 }
