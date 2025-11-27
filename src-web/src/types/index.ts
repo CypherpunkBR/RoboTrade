@@ -201,3 +201,52 @@ export interface ExchangeConfig {
   binance_testnet: boolean;
   kraken_demo: boolean;
 }
+
+// Market Data types
+export interface CandleDto {
+  time: number;
+  open: string | number;
+  high: string | number;
+  low: string | number;
+  close: string | number;
+  volume: string | number;
+}
+
+export type TimeFrame = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
+
+export interface IndicatorsDto {
+  symbol: string;
+  interval: string;
+  candles: CandleDto[];
+  sma: { [period: string]: (string | null)[] };
+  ema: { [period: string]: (string | null)[] };
+}
+
+// Price Alerts types
+export type AlertCondition = 'above' | 'below' | 'cross_above' | 'cross_below' | 'percent_up' | 'percent_down';
+
+export type AlertStatus = 'active' | 'triggered' | 'disabled' | 'expired';
+
+export interface PriceAlertDto {
+  id: string;
+  symbol: string;
+  condition: AlertCondition;
+  target_price: string;
+  percent: string | null;
+  status: AlertStatus;
+  message: string | null;
+  recurring: boolean;
+  trigger_count: number;
+  created_at: string;
+  triggered_at: string | null;
+  last_triggered_at: string | null;
+}
+
+export interface CreatePriceAlertRequest {
+  symbol: string;
+  condition: AlertCondition;
+  target_price: string;
+  percent?: string;
+  message?: string;
+  recurring: boolean;
+}

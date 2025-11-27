@@ -6,15 +6,20 @@ mod account;
 mod asset;
 mod backtest;
 mod candle;
+mod cost_basis;
 mod exchange;
 mod fear_greed;
 mod job;
+mod ledger;
 mod notification;
 mod order;
 mod position;
+mod price_alert;
+mod reconciliation;
 mod risk;
 mod signal;
 mod strategy;
+mod sync_state;
 mod trade;
 
 // Re-exports de Account
@@ -80,3 +85,31 @@ pub use strategy::{
 
 // Re-exports de Trade
 pub use trade::{Trade, TradeCloseReason, TradeId, TradeStats};
+
+// Re-exports de PriceAlert
+pub use price_alert::{
+    AlertCondition as PriceAlertCondition, AlertStatus as PriceAlertStatus,
+    NotificationType as PriceAlertNotificationType, PriceAlert, PriceAlertId,
+};
+
+// Re-exports de Ledger
+pub use ledger::{
+    AssetBalanceSummary, LedgerEntry, LedgerEntryId, LedgerEntryType, LedgerFilters, ReferenceType,
+};
+
+// Re-exports de CostBasis
+pub use cost_basis::{
+    AcquisitionType, ConsumedLot, CostBasisLot, CostBasisLotId, CostBasisMethod, RealizedPnL,
+    UnrealizedPnL,
+};
+
+// Re-exports de Reconciliation
+pub use reconciliation::{
+    Discrepancy, ReconciliationResult, ReconciliationSnapshot, ReconciliationSnapshotId,
+    ReconciliationStatus, SnapshotType as ReconciliationSnapshotType,
+};
+
+// Re-exports de SyncState
+pub use sync_state::{
+    SyncDataType, SyncProgress, SyncReport, SyncState, SyncStateId, SyncStatus,
+};

@@ -10,6 +10,7 @@ use rust_decimal::Decimal;
 use std::sync::Arc;
 
 use crate::exchange_service::ExchangeService;
+use crate::market_data_service::MarketDataService;
 use crate::trading_worker::TradingWorker;
 
 /// Estado compartilhado da aplicação
@@ -21,6 +22,8 @@ pub struct AppState {
     db_pool: Arc<RwLock<Option<DbPool>>>,
     /// Worker de trading
     pub trading_worker: TradingWorker,
+    /// Serviço de dados de mercado
+    pub market_data: MarketDataService,
 }
 
 /// Dados internos do estado
@@ -61,6 +64,7 @@ impl AppState {
             exchange: ExchangeService::new(),
             db_pool: Arc::new(RwLock::new(None)),
             trading_worker: TradingWorker::new(),
+            market_data: MarketDataService::new(),
         }
     }
 
@@ -200,6 +204,7 @@ impl Clone for AppState {
             exchange: self.exchange.clone(),
             db_pool: Arc::clone(&self.db_pool),
             trading_worker: self.trading_worker.clone(),
+            market_data: self.market_data.clone(),
         }
     }
 }

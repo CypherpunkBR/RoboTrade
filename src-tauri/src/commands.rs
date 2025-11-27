@@ -53,13 +53,33 @@ pub async fn get_dashboard_summary(state: State<'_, AppState>) -> CommandResult<
     let (binance, fear_greed_api, database) = state.connection_status();
     let fear_greed = state.fear_greed();
 
+    // Busca posições e ordens de todas as exchanges
+    let positions = state.exchange.get_all_positions().await;
+    let orders = state.exchange.get_all_open_orders().await;
+
+    // Calcula saldo total de todas as exchanges
+    let all_balances = state.exchange.get_all_balances().await;
+    let total_balance_usdt: Decimal = all_balances
+        .values()
+        .flat_map(|balances| balances.iter())
+        .filter(|b| b.asset == "USDT" || b.asset == "USD")
+        .map(|b| b.free + b.locked)
+        .sum();
+
+    // Calcula PnL não realizado total
+    let unrealized_pnl: Decimal = positions.iter().map(|p| p.unrealized_pnl).sum();
+
     Ok(DashboardSummary {
         trading_mode: state.trading_mode(),
-        total_balance_usdt: Decimal::from(10000), // TODO: Buscar saldo real
-        daily_pnl: state.daily_pnl(),
+        total_balance_usdt: if total_balance_usdt > Decimal::ZERO {
+            total_balance_usdt
+        } else {
+            Decimal::from(10000) // Fallback para paper trading
+        },
+        daily_pnl: state.daily_pnl() + unrealized_pnl,
         daily_pnl_pct: Decimal::ZERO,
-        open_positions_count: state.open_positions_count() as u32,
-        active_orders_count: 0,
+        open_positions_count: positions.len() as u32,
+        active_orders_count: orders.len() as u32,
         active_signals_count: 0,
         fear_greed_value: fear_greed.as_ref().map(|f| f.value),
         fear_greed_classification: fear_greed.as_ref().map(|f| f.classification),
@@ -169,12 +189,13 @@ pub async fn get_fear_greed_history(
 // Posições e Ordens
 // =============================================================================
 
-/// Retorna posições abertas
+/// Retorna posições abertas de todas as exchanges
 #[tauri::command]
 pub async fn get_positions(state: State<'_, AppState>) -> CommandResult<Vec<PositionDto>> {
-    debug!("Buscando posições...");
+    debug!("Buscando posições de todas as exchanges...");
 
-    let positions = state.positions();
+    // Busca posições de todas as exchanges conectadas (Binance, Kraken, Paper)
+    let positions = state.exchange.get_all_positions().await;
 
     let dtos: Vec<PositionDto> = positions
         .into_iter()
@@ -207,22 +228,21 @@ pub async fn get_positions(state: State<'_, AppState>) -> CommandResult<Vec<Posi
     Ok(dtos)
 }
 
-/// Retorna ordens abertas
+/// Retorna ordens abertas de todas as exchanges
 #[tauri::command]
 pub async fn get_open_orders(
     state: State<'_, AppState>,
     symbol: Option<String>,
 ) -> CommandResult<Vec<OrderDto>> {
-    debug!(symbol = ?symbol, "Buscando ordens abertas...");
+    debug!(symbol = ?symbol, "Buscando ordens abertas de todas as exchanges...");
 
-    let orders = state
-        .exchange
-        .get_open_orders(symbol.as_deref())
-        .await
-        .map_err(|e| CommandError {
-            code: "ORDERS_ERROR".into(),
-            message: format!("Erro ao buscar ordens: {}", e),
-        })?;
+    // Busca ordens de todas as exchanges conectadas
+    let mut orders = state.exchange.get_all_open_orders().await;
+
+    // Filtra por símbolo se especificado
+    if let Some(ref s) = symbol {
+        orders.retain(|o| o.symbol == *s);
+    }
 
     let dtos: Vec<OrderDto> = orders
         .into_iter()
@@ -246,36 +266,34 @@ pub async fn get_open_orders(
     Ok(dtos)
 }
 
-/// Retorna saldos da conta
+/// Retorna saldos de todas as exchanges
 #[tauri::command]
 pub async fn get_balances(state: State<'_, AppState>) -> CommandResult<Vec<BalanceDto>> {
-    debug!("Buscando saldos...");
+    debug!("Buscando saldos de todas as exchanges...");
 
-    let balances = state
-        .exchange
-        .get_balances()
-        .await
-        .map_err(|e| CommandError {
-            code: "BALANCES_ERROR".into(),
-            message: format!("Erro ao buscar saldos: {}", e),
-        })?;
+    // Busca saldos de todas as exchanges conectadas
+    let all_balances = state.exchange.get_all_balances().await;
 
-    let dtos: Vec<BalanceDto> = balances
-        .into_iter()
-        .map(|b| BalanceDto {
-            asset: b.asset,
-            free: b.free,
-            locked: b.locked,
-            total: b.free + b.locked,
-        })
-        .collect();
+    let mut dtos: Vec<BalanceDto> = Vec::new();
+    for (exchange, balances) in all_balances {
+        for b in balances {
+            dtos.push(BalanceDto {
+                exchange: exchange.clone(),
+                asset: b.asset,
+                free: b.free,
+                locked: b.locked,
+                total: b.free + b.locked,
+            });
+        }
+    }
 
-    debug!(count = dtos.len(), "Saldos encontrados");
+    debug!(count = dtos.len(), "Saldos encontrados de todas as exchanges");
     Ok(dtos)
 }
 
 #[derive(Debug, Serialize)]
 pub struct BalanceDto {
+    pub exchange: String,
     pub asset: String,
     pub free: Decimal,
     pub locked: Decimal,
@@ -674,4 +692,343 @@ pub async fn reset_daily_losses(state: State<'_, AppState>) -> CommandResult<()>
 
     state.trading_worker.reset_daily_losses().await;
     Ok(())
+}
+
+// =============================================================================
+// Market Data
+// =============================================================================
+
+use crate::market_data_service::MarketDataService;
+use robotrade_core::entities::{PriceAlert, PriceAlertCondition};
+
+/// DTO para candle enviado ao frontend
+#[derive(Debug, Serialize)]
+pub struct CandleDto {
+    pub time: i64,
+    pub open: Decimal,
+    pub high: Decimal,
+    pub low: Decimal,
+    pub close: Decimal,
+    pub volume: Decimal,
+}
+
+/// DTO para alerta de preco
+#[derive(Debug, Serialize, serde::Deserialize)]
+pub struct PriceAlertDto {
+    pub id: String,
+    pub symbol: String,
+    pub condition: String,
+    pub target_price: Decimal,
+    pub percent: Option<Decimal>,
+    pub status: String,
+    pub message: Option<String>,
+    pub recurring: bool,
+    pub trigger_count: u32,
+    pub created_at: String,
+    pub triggered_at: Option<String>,
+}
+
+/// Request para criar alerta
+#[derive(Debug, serde::Deserialize)]
+pub struct CreateAlertRequest {
+    pub symbol: String,
+    pub condition: String,
+    pub target_price: Decimal,
+    pub percent: Option<Decimal>,
+    pub message: Option<String>,
+    pub recurring: bool,
+}
+
+/// Busca candles/klines
+#[tauri::command]
+pub async fn get_klines(
+    state: State<'_, AppState>,
+    symbol: String,
+    interval: String,
+    limit: Option<u32>,
+) -> CommandResult<Vec<CandleDto>> {
+    debug!(symbol = %symbol, interval = %interval, "Buscando klines...");
+
+    let candles = state
+        .market_data
+        .get_klines(&symbol, &interval, limit)
+        .await
+        .map_err(|e| CommandError {
+            code: "KLINES_ERROR".into(),
+            message: e,
+        })?;
+
+    let dtos: Vec<CandleDto> = candles
+        .into_iter()
+        .map(|c| CandleDto {
+            time: c.open_time.timestamp(),
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect();
+
+    debug!(count = dtos.len(), "Klines carregados");
+    Ok(dtos)
+}
+
+/// Busca candles com range de tempo
+#[tauri::command]
+pub async fn get_klines_range(
+    state: State<'_, AppState>,
+    symbol: String,
+    interval: String,
+    start_time: Option<i64>,
+    end_time: Option<i64>,
+    limit: Option<u32>,
+) -> CommandResult<Vec<CandleDto>> {
+    debug!(
+        symbol = %symbol,
+        interval = %interval,
+        start = ?start_time,
+        end = ?end_time,
+        "Buscando klines com range..."
+    );
+
+    let candles = state
+        .market_data
+        .get_klines_range(&symbol, &interval, start_time, end_time, limit)
+        .await
+        .map_err(|e| CommandError {
+            code: "KLINES_ERROR".into(),
+            message: e,
+        })?;
+
+    let dtos: Vec<CandleDto> = candles
+        .into_iter()
+        .map(|c| CandleDto {
+            time: c.open_time.timestamp(),
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect();
+
+    debug!(count = dtos.len(), "Klines com range carregados");
+    Ok(dtos)
+}
+
+/// Busca historico completo de klines
+#[tauri::command]
+pub async fn get_klines_history(
+    state: State<'_, AppState>,
+    symbol: String,
+    interval: String,
+    start_time: i64,
+    end_time: Option<i64>,
+) -> CommandResult<Vec<CandleDto>> {
+    info!(
+        symbol = %symbol,
+        interval = %interval,
+        start = %start_time,
+        "Buscando historico completo de klines..."
+    );
+
+    let candles = state
+        .market_data
+        .get_all_klines(&symbol, &interval, start_time, end_time)
+        .await
+        .map_err(|e| CommandError {
+            code: "KLINES_HISTORY_ERROR".into(),
+            message: e,
+        })?;
+
+    let dtos: Vec<CandleDto> = candles
+        .into_iter()
+        .map(|c| CandleDto {
+            time: c.open_time.timestamp(),
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect();
+
+    info!(count = dtos.len(), "Historico de klines carregado");
+    Ok(dtos)
+}
+
+/// Calcula indicadores tecnicos
+#[tauri::command]
+pub async fn calculate_indicators(
+    state: State<'_, AppState>,
+    symbol: String,
+    interval: String,
+    limit: Option<u32>,
+    sma_periods: Option<Vec<u32>>,
+    ema_periods: Option<Vec<u32>>,
+) -> CommandResult<IndicatorsDto> {
+    let candles = state
+        .market_data
+        .get_klines(&symbol, &interval, limit)
+        .await
+        .map_err(|e| CommandError {
+            code: "INDICATORS_ERROR".into(),
+            message: e,
+        })?;
+
+    // Convert candles to DTOs
+    let candle_dtos: Vec<CandleDto> = candles
+        .iter()
+        .map(|c| CandleDto {
+            time: c.open_time.timestamp(),
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect();
+
+    let mut sma_map = std::collections::HashMap::new();
+    let mut ema_map = std::collections::HashMap::new();
+
+    // Calcula SMAs
+    if let Some(periods) = sma_periods {
+        for period in periods {
+            let values = MarketDataService::calculate_sma(&candles, period as usize);
+            sma_map.insert(
+                period.to_string(),
+                values.into_iter().map(|v| v.map(|d| d.to_string())).collect(),
+            );
+        }
+    }
+
+    // Calcula EMAs
+    if let Some(periods) = ema_periods {
+        for period in periods {
+            let values = MarketDataService::calculate_ema(&candles, period as usize);
+            ema_map.insert(
+                period.to_string(),
+                values.into_iter().map(|v| v.map(|d| d.to_string())).collect(),
+            );
+        }
+    }
+
+    Ok(IndicatorsDto {
+        symbol,
+        interval,
+        candles: candle_dtos,
+        sma: sma_map,
+        ema: ema_map,
+    })
+}
+
+#[derive(Debug, Serialize)]
+pub struct IndicatorsDto {
+    pub symbol: String,
+    pub interval: String,
+    pub candles: Vec<CandleDto>,
+    pub sma: std::collections::HashMap<String, Vec<Option<String>>>,
+    pub ema: std::collections::HashMap<String, Vec<Option<String>>>,
+}
+
+// =============================================================================
+// Price Alerts
+// =============================================================================
+
+/// Lista todos os alertas
+#[tauri::command]
+pub async fn list_price_alerts(state: State<'_, AppState>) -> CommandResult<Vec<PriceAlertDto>> {
+    let alerts = state.market_data.list_alerts();
+
+    let dtos: Vec<PriceAlertDto> = alerts
+        .into_iter()
+        .map(|a| PriceAlertDto {
+            id: a.id.to_string(),
+            symbol: a.symbol,
+            condition: format!("{:?}", a.condition).to_lowercase(),
+            target_price: a.target_price,
+            percent: a.percent,
+            status: format!("{:?}", a.status).to_lowercase(),
+            message: a.message,
+            recurring: a.recurring,
+            trigger_count: a.trigger_count,
+            created_at: a.created_at.to_rfc3339(),
+            triggered_at: a.triggered_at.map(|t| t.to_rfc3339()),
+        })
+        .collect();
+
+    Ok(dtos)
+}
+
+/// Cria um novo alerta de preco
+#[tauri::command]
+pub async fn create_price_alert(
+    state: State<'_, AppState>,
+    request: CreateAlertRequest,
+) -> CommandResult<PriceAlertDto> {
+    info!(
+        symbol = %request.symbol,
+        condition = %request.condition,
+        target = %request.target_price,
+        "Criando alerta de preco..."
+    );
+
+    let condition = match request.condition.as_str() {
+        "above" => PriceAlertCondition::Above,
+        "below" => PriceAlertCondition::Below,
+        "cross_above" => PriceAlertCondition::CrossAbove,
+        "cross_below" => PriceAlertCondition::CrossBelow,
+        "percent_up" => PriceAlertCondition::PercentUp,
+        "percent_down" => PriceAlertCondition::PercentDown,
+        _ => {
+            return Err(CommandError {
+                code: "INVALID_CONDITION".into(),
+                message: format!("Condicao invalida: {}", request.condition),
+            })
+        }
+    };
+
+    let mut alert = PriceAlert::new(&request.symbol, condition, request.target_price);
+    alert.message = request.message;
+    alert.recurring = request.recurring;
+    alert.percent = request.percent;
+
+    let id = state.market_data.create_alert(alert.clone());
+
+    Ok(PriceAlertDto {
+        id: id.to_string(),
+        symbol: alert.symbol,
+        condition: request.condition,
+        target_price: alert.target_price,
+        percent: alert.percent,
+        status: "active".into(),
+        message: alert.message,
+        recurring: alert.recurring,
+        trigger_count: 0,
+        created_at: alert.created_at.to_rfc3339(),
+        triggered_at: None,
+    })
+}
+
+/// Remove um alerta
+#[tauri::command]
+pub async fn delete_price_alert(state: State<'_, AppState>, id: String) -> CommandResult<bool> {
+    info!(alert_id = %id, "Removendo alerta de preco...");
+    Ok(state.market_data.remove_alert(&id))
+}
+
+/// Desabilita um alerta
+#[tauri::command]
+pub async fn disable_price_alert(state: State<'_, AppState>, id: String) -> CommandResult<bool> {
+    info!(alert_id = %id, "Desabilitando alerta de preco...");
+    Ok(state.market_data.disable_alert(&id))
+}
+
+/// Reativa um alerta
+#[tauri::command]
+pub async fn enable_price_alert(state: State<'_, AppState>, id: String) -> CommandResult<bool> {
+    info!(alert_id = %id, "Reativando alerta de preco...");
+    Ok(state.market_data.reactivate_alert(&id))
 }

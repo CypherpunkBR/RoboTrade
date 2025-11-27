@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Dashboard } from './pages/Dashboard';
 import { Trading } from './pages/Trading';
 import { History } from './pages/History';
+import { Charts } from './pages/Charts';
 import type { TradingMode, ConnectionStatus } from './types';
 import { getTradingMode, getConnectionStatus } from './lib/tauri';
 import { StatusIndicator } from './components/StatusIndicator';
 import { TradingModeSwitch } from './components/TradingModeSwitch';
 import { setTradingMode } from './lib/tauri';
 
-type Page = 'dashboard' | 'trading' | 'history';
+type Page = 'dashboard' | 'trading' | 'charts' | 'history';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -45,6 +46,7 @@ function App() {
 
   const navItems: { key: Page; label: string }[] = [
     { key: 'dashboard', label: 'Dashboard' },
+    { key: 'charts', label: 'Graficos' },
     { key: 'trading', label: 'Trading' },
     { key: 'history', label: 'Historico' },
   ];
@@ -101,6 +103,7 @@ function App() {
       {/* Main content */}
       <main className="container mx-auto px-4 py-6">
         {currentPage === 'dashboard' && <Dashboard />}
+        {currentPage === 'charts' && <Charts />}
         {currentPage === 'trading' && <Trading />}
         {currentPage === 'history' && <History />}
       </main>

@@ -6,36 +6,29 @@
   "type": "module",
   "scripts": {
     "prepare": "husky install",
-
     "rust:check": "cargo check --workspace --all-targets --all-features",
     "rust:build": "cargo build --workspace",
     "rust:build:release": "cargo build --workspace --release",
     "rust:test": "cargo test --workspace --all-features",
     "rust:test:verbose": "cargo test --workspace --all-features -- --nocapture",
-
     "rust:fmt": "cargo fmt --all -- --check",
     "rust:fmt:fix": "cargo fmt --all",
     "rust:clippy": "cargo clippy --workspace --all-targets --all-features -- -D warnings -W clippy::all -W clippy::pedantic -W clippy::nursery -W clippy::cargo",
     "rust:clippy:fix": "cargo clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged -- -D warnings",
-
     "rust:audit": "cargo audit",
     "rust:deny": "cargo deny check",
     "rust:deny:advisories": "cargo deny check advisories",
     "rust:deny:licenses": "cargo deny check licenses",
     "rust:unused-deps": "cargo machete",
     "rust:tree:duplicates": "cargo tree --workspace --duplicates",
-
     "cpd:rust": "jscpd crates src-tauri/src --config .jscpd.rust.json",
     "cpd:rust:check": "./scripts/check-duplication.sh .jscpd.rust.json crates",
-
     "quality:fix": "npm run rust:fmt:fix",
     "quality:check": "npm run rust:fmt && npm run rust:clippy && npm run rust:test",
     "quality:full": "npm run quality:check && npm run rust:audit && npm run cpd:rust:check",
     "quality": "npm run quality:fix && npm run quality:check",
-
     "validate": "npm run quality:check && npm run rust:deny",
     "validate:all": "npm run quality:full && npm run rust:deny",
-
     "ci": "npm run validate:all && npm run rust:build"
   },
   "devDependencies": {
@@ -56,5 +49,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "lightweight-charts": "^5.0.9"
   }
 }

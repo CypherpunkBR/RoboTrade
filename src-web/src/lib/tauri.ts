@@ -12,6 +12,10 @@ import type {
   CreateOrderRequest,
   RiskStats,
   AppConfig,
+  CandleDto,
+  IndicatorsDto,
+  PriceAlertDto,
+  CreatePriceAlertRequest,
 } from '@/types';
 
 // Dashboard
@@ -137,4 +141,77 @@ export async function setTradingEnabled(enabled: boolean): Promise<void> {
 
 export async function resetDailyLosses(): Promise<void> {
   return invoke('reset_daily_losses');
+}
+
+// Market Data - Klines
+export async function getKlines(
+  symbol: string,
+  interval: string,
+  limit?: number
+): Promise<CandleDto[]> {
+  return invoke('get_klines', { symbol, interval, limit });
+}
+
+export async function getKlinesRange(
+  symbol: string,
+  interval: string,
+  startTime?: number,
+  endTime?: number,
+  limit?: number
+): Promise<CandleDto[]> {
+  return invoke('get_klines_range', {
+    symbol,
+    interval,
+    startTime,
+    endTime,
+    limit
+  });
+}
+
+export async function getKlinesHistory(
+  symbol: string,
+  interval: string,
+  startTime: number,
+  endTime?: number
+): Promise<CandleDto[]> {
+  return invoke('get_klines_history', { symbol, interval, startTime, endTime });
+}
+
+export async function calculateIndicators(
+  symbol: string,
+  interval: string,
+  limit?: number,
+  smaPeriods?: number[],
+  emaPeriods?: number[]
+): Promise<IndicatorsDto> {
+  return invoke('calculate_indicators', {
+    symbol,
+    interval,
+    limit,
+    smaPeriods,
+    emaPeriods,
+  });
+}
+
+// Price Alerts
+export async function listPriceAlerts(): Promise<PriceAlertDto[]> {
+  return invoke('list_price_alerts');
+}
+
+export async function createPriceAlert(
+  request: CreatePriceAlertRequest
+): Promise<PriceAlertDto> {
+  return invoke('create_price_alert', { request });
+}
+
+export async function deletePriceAlert(id: string): Promise<boolean> {
+  return invoke('delete_price_alert', { id });
+}
+
+export async function disablePriceAlert(id: string): Promise<boolean> {
+  return invoke('disable_price_alert', { id });
+}
+
+export async function enablePriceAlert(id: string): Promise<boolean> {
+  return invoke('enable_price_alert', { id });
 }

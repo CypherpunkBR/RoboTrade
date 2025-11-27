@@ -5,12 +5,14 @@
 
 mod commands;
 mod exchange_service;
+mod market_data_service;
 mod state;
 mod trading_worker;
 mod tray;
 
 pub use commands::*;
 pub use exchange_service::*;
+pub use market_data_service::*;
 pub use state::*;
 pub use trading_worker::*;
 pub use tray::*;
@@ -20,6 +22,48 @@ use robotrade_infra::database::{self, DatabaseConfig};
 use robotrade_market_data::AlternativeMeFearGreedProvider;
 use tauri::Manager;
 use tracing::{error, info, warn};
+
+/// Inicializa exchanges a partir das variáveis de ambiente
+fn initialize_exchanges(app_state: &AppState) {
+    // Binance Futures
+    if let (Ok(api_key), Ok(api_secret)) = (
+        std::env::var("BINANCE_API_KEY"),
+        std::env::var("BINANCE_API_SECRET"),
+    ) {
+        if !api_key.is_empty() && !api_secret.is_empty() {
+            let is_testnet = std::env::var("BINANCE_TESTNET")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(true);
+
+            info!(testnet = is_testnet, "Inicializando Binance Futures...");
+            app_state.exchange.initialize_binance(ExchangeCredentials {
+                api_key,
+                api_secret,
+                is_testnet,
+            });
+            app_state.set_binance_connected(true);
+        }
+    }
+
+    // Kraken Futures
+    if let (Ok(api_key), Ok(api_secret)) = (
+        std::env::var("KRAKEN_API_KEY"),
+        std::env::var("KRAKEN_API_SECRET"),
+    ) {
+        if !api_key.is_empty() && !api_secret.is_empty() {
+            let is_demo = std::env::var("KRAKEN_DEMO")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(true);
+
+            info!(demo = is_demo, "Inicializando Kraken Futures...");
+            app_state.exchange.initialize_kraken(ExchangeCredentials {
+                api_key,
+                api_secret,
+                is_testnet: is_demo,
+            });
+        }
+    }
+}
 
 /// Configura e executa a aplicação Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -39,6 +83,9 @@ pub fn run() {
 
             // Inicializa estado da aplicação
             let app_state = AppState::new();
+
+            // Inicializa exchanges a partir de variáveis de ambiente
+            initialize_exchanges(&app_state);
 
             // Inicializa banco de dados
             let state_clone = app_state.clone();
@@ -138,6 +185,17 @@ pub fn run() {
             commands::get_risk_stats,
             commands::set_trading_enabled,
             commands::reset_daily_losses,
+            // Market Data - Klines
+            commands::get_klines,
+            commands::get_klines_range,
+            commands::get_klines_history,
+            commands::calculate_indicators,
+            // Price Alerts
+            commands::list_price_alerts,
+            commands::create_price_alert,
+            commands::delete_price_alert,
+            commands::disable_price_alert,
+            commands::enable_price_alert,
         ])
         .run(tauri::generate_context!())
         .expect("Erro ao executar aplicação Tauri");
