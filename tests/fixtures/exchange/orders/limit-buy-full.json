@@ -1,0 +1,27 @@
+{
+  "scenario": "full_fill_immediate",
+  "description": "Market buy order filled immediately at market price",
+  "order": {
+    "client_order_id": "test-order-001",
+    "symbol": "BTCUSDT",
+    "side": "BUY",
+    "type": "LIMIT",
+    "quantity": "0.05",
+    "price": "50000.00",
+    "time_in_force": "GTC"
+  },
+  "fills": [
+    {
+      "fill_id": "fill-001",
+      "trade_id": "trade-001",
+      "price": "50000.00",
+      "quantity": "0.05",
+      "commission": "0.00005",
+      "commission_asset": "BTC",
+      "timestamp": "2025-11-01T00:00:05Z",
+      "is_maker": true
+    }
+  ],
+  "final_status": "FILLED",
+  "delay_ms": 100
+}

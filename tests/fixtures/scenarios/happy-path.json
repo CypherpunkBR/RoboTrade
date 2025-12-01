@@ -1,0 +1,67 @@
+{
+  "scenario": "complete_trade_cycle",
+  "description": "Open long, partial close, full close with profit",
+  "orders": [
+    {
+      "client_order_id": "open-long-btc",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "type": "MARKET",
+      "quantity": "1.0",
+      "fills": [
+        {
+          "fill_id": "fill-open-1",
+          "trade_id": "trade-open-1",
+          "price": "50000.00",
+          "quantity": "1.0",
+          "commission": "0.001",
+          "commission_asset": "BTC",
+          "timestamp": "2025-11-01T00:00:05Z",
+          "is_maker": false
+        }
+      ],
+      "final_status": "FILLED"
+    },
+    {
+      "client_order_id": "close-partial-btc",
+      "symbol": "BTCUSDT",
+      "side": "SELL",
+      "type": "LIMIT",
+      "quantity": "0.3",
+      "price": "51500.00",
+      "fills": [
+        {
+          "fill_id": "fill-close-1",
+          "trade_id": "trade-close-1",
+          "price": "51500.00",
+          "quantity": "0.3",
+          "commission": "0.0003",
+          "commission_asset": "BTC",
+          "timestamp": "2025-11-01T00:05:00Z",
+          "is_maker": true
+        }
+      ],
+      "final_status": "FILLED"
+    },
+    {
+      "client_order_id": "close-full-btc",
+      "symbol": "BTCUSDT",
+      "side": "SELL",
+      "type": "MARKET",
+      "quantity": "0.7",
+      "fills": [
+        {
+          "fill_id": "fill-close-2",
+          "trade_id": "trade-close-2",
+          "price": "52000.00",
+          "quantity": "0.7",
+          "commission": "0.0007",
+          "commission_asset": "BTC",
+          "timestamp": "2025-11-01T00:10:00Z",
+          "is_maker": false
+        }
+      ],
+      "final_status": "FILLED"
+    }
+  ]
+}
