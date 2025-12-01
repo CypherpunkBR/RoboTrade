@@ -13,6 +13,7 @@ mod job;
 mod ledger;
 mod notification;
 mod order;
+mod pnl;
 mod position;
 mod price_alert;
 mod reconciliation;
@@ -99,9 +100,11 @@ pub use ledger::{
 
 // Re-exports de CostBasis
 pub use cost_basis::{
-    AcquisitionType, ConsumedLot, CostBasisLot, CostBasisLotId, CostBasisMethod, RealizedPnL,
-    UnrealizedPnL,
+    AcquisitionType, ConsumedLot, CostBasisLot, CostBasisLotId, CostBasisMethod,
 };
+
+// Re-exports de PnL (tipos consolidados)
+pub use pnl::{PnLSummary, RealizedPnL, RealizedPnLId, UnrealizedPnL};
 
 // Re-exports de Reconciliation
 pub use reconciliation::{

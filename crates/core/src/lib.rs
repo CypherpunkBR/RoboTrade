@@ -5,15 +5,18 @@
 //! - DTOs para comunicação entre módulos
 //! - Tipos de erro unificados
 //! - Traits fundamentais para abstração
+//! - Mensagens para comunicação entre actors
 //!
 //! Este crate não possui dependências de outros crates internos.
 
 pub mod dto;
 pub mod entities;
 pub mod error;
+pub mod messages;
 pub mod traits;
 
 // Re-exports para facilitar uso
 pub use entities::*;
 pub use error::*;
+pub use messages::*;
 pub use traits::*;

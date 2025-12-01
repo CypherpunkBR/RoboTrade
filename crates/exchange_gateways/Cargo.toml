@@ -21,6 +21,7 @@ serde_json = { workspace = true }
 
 # Tipos
 rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
 chrono = { workspace = true }
 
 # Crypto (para assinaturas de API)
@@ -38,6 +39,9 @@ futures-util = { version = "0.3", default-features = false, features = ["sink", 
 
 # Logging
 tracing = { workspace = true }
+
+# Sync primitives
+parking_lot = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

@@ -306,117 +306,9 @@ impl ConsumedLot {
     }
 }
 
-/// P&L realizado de uma venda
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RealizedPnL {
-    /// Lucro/prejuízo bruto (proceeds - cost basis)
-    pub gross_pnl: Decimal,
-    /// Taxas pagas
-    pub fees: Decimal,
-    /// Lucro/prejuízo líquido (gross - fees)
-    pub net_pnl: Decimal,
-    /// Cost basis total
-    pub cost_basis: Decimal,
-    /// Proceeds total (valor de venda)
-    pub proceeds: Decimal,
-    /// Período de holding (do lote mais antigo usado)
-    pub holding_period_days: i64,
-    /// Se é ganho de curto prazo (< 1 ano)
-    pub is_short_term: bool,
-    /// Lotes consumidos nesta venda
-    pub consumed_lots: Vec<ConsumedLot>,
-}
-
-impl RealizedPnL {
-    /// Cria um novo P&L realizado
-    pub fn new(
-        proceeds: Decimal,
-        cost_basis: Decimal,
-        fees: Decimal,
-        holding_period_days: i64,
-        consumed_lots: Vec<ConsumedLot>,
-    ) -> Self {
-        let gross_pnl = proceeds - cost_basis;
-        let net_pnl = gross_pnl - fees;
-        let is_short_term = holding_period_days < 365;
-
-        Self {
-            gross_pnl,
-            fees,
-            net_pnl,
-            cost_basis,
-            proceeds,
-            holding_period_days,
-            is_short_term,
-            consumed_lots,
-        }
-    }
-
-    /// Verifica se houve lucro
-    pub fn is_profit(&self) -> bool {
-        self.net_pnl > Decimal::ZERO
-    }
-
-    /// Verifica se houve prejuízo
-    pub fn is_loss(&self) -> bool {
-        self.net_pnl < Decimal::ZERO
-    }
-}
-
-/// P&L não realizado de uma posição aberta
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UnrealizedPnL {
-    /// Ativo
-    pub asset: String,
-    /// Quantidade em posição
-    pub quantity: Decimal,
-    /// Cost basis total
-    pub cost_basis: Decimal,
-    /// Custo médio por unidade
-    pub average_cost: Decimal,
-    /// Preço de mercado atual
-    pub current_price: Decimal,
-    /// Valor de mercado atual
-    pub market_value: Decimal,
-    /// P&L não realizado
-    pub unrealized_pnl: Decimal,
-    /// P&L percentual
-    pub unrealized_pnl_pct: Decimal,
-}
-
-impl UnrealizedPnL {
-    /// Calcula P&L não realizado
-    pub fn calculate(
-        asset: String,
-        quantity: Decimal,
-        cost_basis: Decimal,
-        current_price: Decimal,
-    ) -> Self {
-        let average_cost = if quantity.is_zero() {
-            Decimal::ZERO
-        } else {
-            cost_basis / quantity
-        };
-        let market_value = quantity * current_price;
-        let unrealized_pnl = market_value - cost_basis;
-        let unrealized_pnl_pct = if cost_basis.is_zero() {
-            Decimal::ZERO
-        } else {
-            (unrealized_pnl / cost_basis) * Decimal::from(100)
-        };
-
-        Self {
-            asset,
-            quantity,
-            cost_basis,
-            average_cost,
-            current_price,
-            market_value,
-            unrealized_pnl,
-            unrealized_pnl_pct,
-        }
-    }
-}
+// Nota: Os tipos RealizedPnL, UnrealizedPnL e PnLSummary foram movidos para
+// crates/core/src/entities/pnl.rs como tipos consolidados que incluem informações
+// de exchange, símbolo, e suportam tanto spot quanto futures.
 
 #[cfg(test)]
 mod tests {
@@ -483,33 +375,5 @@ mod tests {
         assert!(lot.is_closed);
     }
 
-    #[test]
-    fn test_realized_pnl() {
-        let pnl = RealizedPnL::new(
-            dec!(55000), // proceeds
-            dec!(50000), // cost_basis
-            dec!(50),    // fees
-            30,          // holding days
-            vec![],
-        );
-
-        assert_eq!(pnl.gross_pnl, dec!(5000));
-        assert_eq!(pnl.net_pnl, dec!(4950));
-        assert!(pnl.is_profit());
-        assert!(pnl.is_short_term);
-    }
-
-    #[test]
-    fn test_unrealized_pnl() {
-        let pnl = UnrealizedPnL::calculate(
-            "BTC".to_string(),
-            dec!(1),
-            dec!(50000),
-            dec!(55000),
-        );
-
-        assert_eq!(pnl.market_value, dec!(55000));
-        assert_eq!(pnl.unrealized_pnl, dec!(5000));
-        assert_eq!(pnl.unrealized_pnl_pct, dec!(10));
-    }
+    // Nota: Testes de RealizedPnL e UnrealizedPnL movidos para pnl.rs
 }

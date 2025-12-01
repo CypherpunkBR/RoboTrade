@@ -9,6 +9,8 @@
 
 pub mod binance;
 pub mod kraken;
+pub mod paper;
 
 pub use binance::BinanceFuturesClient;
 pub use kraken::KrakenFuturesClient;
+pub use paper::PaperTradingClient;

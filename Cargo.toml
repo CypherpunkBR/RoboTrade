@@ -5,6 +5,7 @@
 resolver = "2"
 members = [
     "crates/core",
+    "crates/actors",
     "crates/market_data",
     "crates/analytics",
     "crates/trading_worker",
@@ -94,6 +95,7 @@ tauri-build = { version = "2.0" }
 
 # Crates internos
 robotrade-core = { path = "crates/core" }
+robotrade-actors = { path = "crates/actors" }
 robotrade-market-data = { path = "crates/market_data" }
 robotrade-analytics = { path = "crates/analytics" }
 robotrade-trading-worker = { path = "crates/trading_worker" }

@@ -1,0 +1,119 @@
+./
+├── 1.txt
+├── analytics
+│   ├── Cargo.toml
+│   └── src
+│       ├── backtest
+│       │   ├── engine.rs
+│       │   └── mod.rs
+│       ├── indicators
+│       │   ├── atr.rs
+│       │   ├── bollinger.rs
+│       │   ├── ema.rs
+│       │   ├── macd.rs
+│       │   ├── mod.rs
+│       │   ├── rsi.rs
+│       │   └── sma.rs
+│       ├── lib.rs
+│       └── strategies
+│           ├── fear_greed.rs
+│           └── mod.rs
+├── core
+│   ├── Cargo.toml
+│   └── src
+│       ├── dto
+│       │   └── mod.rs
+│       ├── entities
+│       │   ├── account.rs
+│       │   ├── asset.rs
+│       │   ├── backtest.rs
+│       │   ├── candle.rs
+│       │   ├── cost_basis.rs
+│       │   ├── exchange.rs
+│       │   ├── fear_greed.rs
+│       │   ├── job.rs
+│       │   ├── ledger.rs
+│       │   ├── mod.rs
+│       │   ├── notification.rs
+│       │   ├── order.rs
+│       │   ├── position.rs
+│       │   ├── price_alert.rs
+│       │   ├── reconciliation.rs
+│       │   ├── risk.rs
+│       │   ├── signal.rs
+│       │   ├── strategy.rs
+│       │   ├── sync_state.rs
+│       │   └── trade.rs
+│       ├── error.rs
+│       ├── lib.rs
+│       └── traits.rs
+├── exchange_gateways
+│   ├── Cargo.toml
+│   ├── examples
+│   │   └── test_apis.rs
+│   └── src
+│       ├── binance
+│       │   ├── client.rs
+│       │   ├── mod.rs
+│       │   ├── models.rs
+│       │   ├── signer.rs
+│       │   └── websocket.rs
+│       ├── kraken
+│       │   ├── client.rs
+│       │   ├── mod.rs
+│       │   ├── models.rs
+│       │   ├── signer.rs
+│       │   └── websocket.rs
+│       ├── lib.rs
+│       └── paper
+├── infra
+│   ├── Cargo.toml
+│   ├── migrations
+│   │   ├── 00001_initial_schema.sql
+│   │   ├── 00002_views_and_functions.sql
+│   │   ├── 00003_triggers_and_maintenance.sql
+│   │   └── 00004_ledger_and_reconciliation.sql
+│   └── src
+│       ├── config
+│       │   └── mod.rs
+│       ├── database
+│       │   ├── mod.rs
+│       │   ├── rows.rs
+│       │   └── schema.rs
+│       ├── lib.rs
+│       ├── logging
+│       │   └── mod.rs
+│       └── repositories
+│           ├── candle.rs
+│           ├── cost_basis.rs
+│           ├── exchange.rs
+│           ├── fear_greed.rs
+│           ├── ledger.rs
+│           ├── mod.rs
+│           ├── reconciliation.rs
+│           ├── symbol.rs
+│           └── sync_state.rs
+├── market_data
+│   ├── Cargo.toml
+│   └── src
+│       ├── lib.rs
+│       └── providers
+│           ├── fear_greed.rs
+│           └── mod.rs
+└── trading_worker
+    ├── Cargo.toml
+    └── src
+        ├── circuit_breaker.rs
+        ├── collector.rs
+        ├── job_queue.rs
+        ├── ledger_service.rs
+        ├── lib.rs
+        ├── pnl_calculator.rs
+        ├── position_manager.rs
+        ├── reconciliation_service.rs
+        ├── risk.rs
+        ├── scheduler.rs
+        ├── sync_engine.rs
+        └── ws_manager.rs
+
+28 directories, 89 files
