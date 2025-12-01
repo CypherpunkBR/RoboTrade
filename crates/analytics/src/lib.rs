@@ -18,16 +18,24 @@ pub use strategies::{fear_greed::FearGreedStrategyConfig, FearGreedStrategy, Str
 
 // Re-exports - Indicators
 pub use indicators::{
-    // Traits
-    Indicator, CandleIndicator,
-    // Moving Averages
-    SMA, EMA,
-    // Oscillators
-    RSI, RSILevels,
-    MACD, MACDResult,
-    // Volatility
-    BollingerBands, BollingerResult,
-    ATR, ATRMultipliers,
-    // Utils
-    extract_close_prices, extract_high_prices, extract_low_prices,
+  // Utils
+  extract_close_prices,
+  extract_high_prices,
+  extract_low_prices,
+  ATRMultipliers,
+  // Volatility
+  BollingerBands,
+  BollingerResult,
+  CandleIndicator,
+  // Traits
+  Indicator,
+  MACDResult,
+  RSILevels,
+  ATR,
+  EMA,
+  MACD,
+  // Oscillators
+  RSI,
+  // Moving Averages
+  SMA,
 };

@@ -10,50 +10,47 @@
 //! - WebSocket management (multi-exchange)
 //! - Historical sync engine
 
-pub mod collector;
-pub mod scheduler;
-pub mod job_queue;
-pub mod position_manager;
-pub mod risk;
 pub mod circuit_breaker;
-pub mod ws_manager;
-pub mod sync_engine;
+pub mod collector;
+pub mod job_queue;
 pub mod ledger_service;
 pub mod pnl_calculator;
+pub mod position_manager;
 pub mod reconciliation_service;
+pub mod risk;
+pub mod scheduler;
+pub mod sync_engine;
+pub mod ws_manager;
 
 // Re-exports
+pub use circuit_breaker::{
+  CircuitBreaker, CircuitBreakerConfig, CircuitBreakerEvent, CircuitState, FailureType,
+};
 pub use collector::DataCollector;
-pub use scheduler::{Scheduler, SchedulerConfig, SchedulerEvent};
 pub use job_queue::{Job, JobPayload, JobPriority, JobQueue, JobStatus, JobType};
-pub use position_manager::{PositionManager, PositionManagerConfig, PositionEvent};
-pub use risk::{RiskManager, RiskConfig, RiskCheckResult, RiskRejectionReason};
-pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState, CircuitBreakerEvent, FailureType};
-pub use ws_manager::{
-    WsManager, WsManagerConfig, WsManagerHandle, WsManagerState,
-    NormalizedEvent, Exchange, WsConnectionState,
-    BalanceUpdateEvent, PositionUpdateEvent, OrderUpdateEvent, TradeEvent,
-    AccountLogEvent, ConnectionStateEvent, ErrorEvent,
-    PositionSide, OrderSide, OrderStatus, AccountLogType,
-};
-pub use sync_engine::{
-    SyncEngine, SyncEngineHandle, SyncConfig, SyncDataType, SyncStatus,
-    SyncState, SyncProgressEvent, SyncDataStore, ExchangeSyncAdapter,
-    SyncedTrade, SyncedOrder, SyncedPosition, SyncedBalance,
-    SyncedDeposit, SyncedWithdrawal, SyncedFunding,
-};
 pub use ledger_service::{
-    LedgerService, LedgerStore, LedgerEntry, LedgerEntryType,
-    LedgerFilters, LedgerSummary, AssetBalance,
+  AssetBalance, LedgerEntry, LedgerEntryType, LedgerFilters, LedgerService, LedgerStore,
+  LedgerSummary,
 };
 pub use pnl_calculator::{
-    PnLCalculator, TaxLotStore, CostBasisMethod,
-    TaxLot, RealizedPnL, UnrealizedPnL, PnLSummary,
-    PositionSide as PnLPositionSide, AcquisitionType,
+  AcquisitionType, CostBasisMethod, PnLCalculator, PnLSummary, PositionSide as PnLPositionSide,
+  RealizedPnL, TaxLot, TaxLotStore, UnrealizedPnL,
 };
+pub use position_manager::{PositionEvent, PositionManager, PositionManagerConfig};
 pub use reconciliation_service::{
-    ReconciliationService, ReconciliationConfig, ReconciliationStore,
-    ReconciliationSnapshot, ReconciliationStatus, ReconciliationHealth,
-    Discrepancy, DiscrepancyType, BalanceSnapshot, HealthStatus,
-    BalanceFetcher, LedgerBalanceFetcher,
+  BalanceFetcher, BalanceSnapshot, Discrepancy, DiscrepancyType, HealthStatus,
+  LedgerBalanceFetcher, ReconciliationConfig, ReconciliationHealth, ReconciliationService,
+  ReconciliationSnapshot, ReconciliationStatus, ReconciliationStore,
+};
+pub use risk::{RiskCheckResult, RiskConfig, RiskManager, RiskRejectionReason};
+pub use scheduler::{Scheduler, SchedulerConfig, SchedulerEvent};
+pub use sync_engine::{
+  ExchangeSyncAdapter, SyncConfig, SyncDataStore, SyncDataType, SyncEngine, SyncEngineHandle,
+  SyncProgressEvent, SyncState, SyncStatus, SyncedBalance, SyncedDeposit, SyncedFunding,
+  SyncedOrder, SyncedPosition, SyncedTrade, SyncedWithdrawal,
+};
+pub use ws_manager::{
+  AccountLogEvent, AccountLogType, BalanceUpdateEvent, ConnectionStateEvent, ErrorEvent, Exchange,
+  NormalizedEvent, OrderSide, OrderStatus, OrderUpdateEvent, PositionSide, PositionUpdateEvent,
+  TradeEvent, WsConnectionState, WsManager, WsManagerConfig, WsManagerHandle, WsManagerState,
 };

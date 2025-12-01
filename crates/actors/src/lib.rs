@@ -46,6 +46,6 @@ mod actor;
 mod handle;
 mod supervisor;
 
-pub use actor::{AppActor, StopReason, spawn_actor};
-pub use handle::{ActorHandle, ActorError};
-pub use supervisor::{Supervisor, SupervisionStrategy, SupervisionEvent};
+pub use actor::{spawn_actor, AppActor, StopReason};
+pub use handle::{ActorError, ActorHandle};
+pub use supervisor::{SupervisionEvent, SupervisionStrategy, Supervisor};

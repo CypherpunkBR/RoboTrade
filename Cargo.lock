@@ -3924,6 +3924,7 @@ dependencies = [
  "hex",
  "hmac",
  "parking_lot",
+ "rand 0.8.5",
  "reqwest",
  "robotrade-core",
  "rust_decimal",

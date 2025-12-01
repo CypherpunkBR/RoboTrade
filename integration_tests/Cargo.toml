@@ -1,0 +1,43 @@
+[package]
+name = "integration_tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Internal crates
+robotrade-core = { path = "../crates/core" }
+robotrade-infra = { path = "../crates/infra" }
+robotrade-exchange-gateways = { path = "../crates/exchange_gateways" }
+robotrade-trading-worker = { path = "../crates/trading_worker" }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true, features = ["runtime-tokio", "sqlite"] }
+
+# Types
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Testing
+testcontainers = "0.15"
+tempfile = { workspace = true }
+wiremock = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[[test]]
+name = "e2e_pnl_calculation"
+path = "tests/e2e_pnl_calculation.rs"
+harness = true

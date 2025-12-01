@@ -15,8 +15,8 @@ pub mod repositories;
 
 // Re-exports principais
 pub use config::{
-    config_path, database_path, logs_path, project_dirs, AppConfig, DataCollectionConfig,
-    ExchangeConfig, GeneralConfig, LoggingConfig, NotificationConfig, TradingConfig,
+  config_path, database_path, logs_path, project_dirs, AppConfig, DataCollectionConfig,
+  ExchangeConfig, GeneralConfig, LoggingConfig, NotificationConfig, TradingConfig,
 };
 pub use database::{close_database, health_check, init_database, DatabaseConfig, DbPool};
 pub use logging::{init_logging, LoggingGuard};

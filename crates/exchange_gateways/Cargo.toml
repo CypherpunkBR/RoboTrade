@@ -5,6 +5,13 @@ edition = "2021"
 description = "Gateways para comunicação com exchanges"
 license = "MIT"
 
+[features]
+default = ["binance", "kraken", "paper"]
+binance = []
+kraken = []
+paper = []
+mock = []
+
 [dependencies]
 robotrade-core = { path = "../core" }
 
@@ -42,6 +49,9 @@ tracing = { workspace = true }
 
 # Sync primitives
 parking_lot = { workspace = true }
+
+# Random (for mock failures)
+rand = "0.8"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
