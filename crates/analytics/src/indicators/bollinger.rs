@@ -120,12 +120,12 @@ impl BollingerBands {
 
     /// Verifica se preço está acima da banda superior
     pub fn is_above_upper(price: Decimal, result: &BollingerResult) -> bool {
-        result.upper.map_or(false, |upper| price > upper)
+        result.upper.is_some_and(|upper| price > upper)
     }
 
     /// Verifica se preço está abaixo da banda inferior
     pub fn is_below_lower(price: Decimal, result: &BollingerResult) -> bool {
-        result.lower.map_or(false, |lower| price < lower)
+        result.lower.is_some_and(|lower| price < lower)
     }
 
     /// Verifica se preço está dentro das bandas
@@ -138,7 +138,7 @@ impl BollingerBands {
 
     /// Verifica squeeze (bandas contraídas - baixa volatilidade)
     pub fn is_squeeze(&self, result: &BollingerResult, threshold: Decimal) -> bool {
-        result.bandwidth.map_or(false, |bw| bw < threshold)
+        result.bandwidth.is_some_and(|bw| bw < threshold)
     }
 }
 

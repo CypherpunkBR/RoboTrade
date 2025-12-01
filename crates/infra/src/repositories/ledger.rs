@@ -1,7 +1,7 @@
 //! Repositório SQLite para Ledger Entries
 
 use async_trait::async_trait;
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{TimeZone, Utc};
 use robotrade_core::entities::{
     AssetBalanceSummary, LedgerEntry, LedgerEntryId, LedgerEntryType, LedgerFilters, ReferenceType,
 };

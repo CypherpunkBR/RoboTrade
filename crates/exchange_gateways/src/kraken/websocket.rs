@@ -5,7 +5,6 @@
 
 use futures_util::{SinkExt, StreamExt};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 use tokio::net::TcpStream;

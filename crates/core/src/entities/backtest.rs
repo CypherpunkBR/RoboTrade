@@ -82,8 +82,10 @@ impl std::str::FromStr for BacktestStatus {
 /// Modelo de preenchimento de ordens
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum FillModel {
     /// Preenche no preço de fechamento
+    #[default]
     Close,
     /// Preenche no preço de abertura do próximo candle
     NextOpen,
@@ -93,11 +95,6 @@ pub enum FillModel {
     Worst,
 }
 
-impl Default for FillModel {
-    fn default() -> Self {
-        FillModel::Close
-    }
-}
 
 impl fmt::Display for FillModel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -113,8 +110,10 @@ impl fmt::Display for FillModel {
 /// Modelo de dimensionamento de posição
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum PositionSizing {
     /// Tamanho fixo
+    #[default]
     Fixed,
     /// Percentual do capital
     PercentOfEquity,
@@ -124,11 +123,6 @@ pub enum PositionSizing {
     Kelly,
 }
 
-impl Default for PositionSizing {
-    fn default() -> Self {
-        PositionSizing::Fixed
-    }
-}
 
 impl fmt::Display for PositionSizing {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -77,7 +77,7 @@ pub async fn get_dashboard_summary(state: State<'_, AppState>) -> CommandResult<
         .flat_map(|(exchange, balances)| {
             debug!(exchange = %exchange, count = balances.len(), "Saldos da exchange");
             let exchange = exchange.clone();
-            balances.iter().map(move |b| {
+            balances.iter().inspect(move |b| {
                 debug!(
                     exchange = %exchange,
                     asset = %b.asset,
@@ -85,7 +85,6 @@ pub async fn get_dashboard_summary(state: State<'_, AppState>) -> CommandResult<
                     locked = %b.locked,
                     "Saldo encontrado"
                 );
-                b
             })
         })
         .filter(|b| b.asset == "USDT" || b.asset == "USD")

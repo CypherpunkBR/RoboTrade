@@ -151,8 +151,7 @@ impl SymbolRepository for SqliteSymbolRepository {
         debug!(symbol = %symbol.symbol, exchange = %symbol.exchange_id, "Salvando símbolo");
 
         let metadata_json = symbol.metadata.as_ref()
-            .map(|m| serde_json::to_string(m).ok())
-            .flatten();
+            .and_then(|m| serde_json::to_string(m).ok());
 
         if symbol.id == 0 {
             // Insert

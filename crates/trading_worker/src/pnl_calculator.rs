@@ -14,7 +14,6 @@ use chrono::{DateTime, Duration, Utc};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
 use tracing::{debug, info};
 use uuid::Uuid;
 
@@ -22,8 +21,10 @@ use super::ws_manager::Exchange;
 
 /// Cost basis calculation method
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum CostBasisMethod {
     /// First In, First Out
+    #[default]
     FIFO,
     /// Last In, First Out
     LIFO,
@@ -31,11 +32,6 @@ pub enum CostBasisMethod {
     AverageCost,
 }
 
-impl Default for CostBasisMethod {
-    fn default() -> Self {
-        CostBasisMethod::FIFO
-    }
-}
 
 /// Tax lot (a unit of acquisition for cost basis tracking)
 #[derive(Debug, Clone, Serialize, Deserialize)]

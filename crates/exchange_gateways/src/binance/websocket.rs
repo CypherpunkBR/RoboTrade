@@ -3,10 +3,9 @@
 //! User Data Stream para receber atualizações de conta em tempo real.
 //! Documentação: https://binance-docs.github.io/apidocs/futures/en/#user-data-streams
 
-use chrono::{DateTime, Utc};
 use futures_util::{SinkExt, StreamExt};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 use tokio::net::TcpStream;

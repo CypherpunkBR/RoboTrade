@@ -5,9 +5,6 @@
 //! incrementally.
 
 use chrono::{DateTime, TimeZone, Utc};
-use robotrade_core::entities::{
-    AcquisitionType as CoreAcquisitionType, CostBasisMethod as CoreCostBasisMethod,
-};
 use robotrade_infra::database::DbPool;
 use robotrade_trading_worker::{
     pnl_calculator::{
@@ -315,12 +312,10 @@ impl PnLState {
                 } else {
                     summary.short_term_losses += entry.gain_loss.abs();
                 }
+            } else if entry.gain_loss > Decimal::ZERO {
+                summary.long_term_gains += entry.gain_loss;
             } else {
-                if entry.gain_loss > Decimal::ZERO {
-                    summary.long_term_gains += entry.gain_loss;
-                } else {
-                    summary.long_term_losses += entry.gain_loss.abs();
-                }
+                summary.long_term_losses += entry.gain_loss.abs();
             }
         }
 

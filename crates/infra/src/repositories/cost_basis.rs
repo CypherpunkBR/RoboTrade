@@ -1,7 +1,7 @@
 //! Repositório SQLite para Cost Basis Lots
 
 use async_trait::async_trait;
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{TimeZone, Utc};
 use robotrade_core::entities::{
     AcquisitionType, CostBasisLot, CostBasisLotId, CostBasisMethod,
 };
@@ -510,8 +510,7 @@ impl TryFrom<CostBasisLotRow> for CostBasisLot {
 
         let closed_at = row
             .closed_at
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let created_at = Utc.timestamp_opt(row.created_at, 0).single().ok_or_else(|| {
             InfraError::Database("created_at inválido".to_string())

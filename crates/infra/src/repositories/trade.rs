@@ -271,7 +271,7 @@ impl TradeRepository for SqliteTradeRepository {
         let metadata = trade
             .metadata
             .as_ref()
-            .map(|m| serde_json::to_string(m))
+            .map(serde_json::to_string)
             .transpose()
             .map_err(|e| format!("Failed to serialize metadata: {}", e))?;
 

@@ -138,22 +138,19 @@ impl std::str::FromStr for JobType {
 /// Prioridade do job
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum JobPriority {
     /// Crítica (executa primeiro)
     Critical = 0,
     /// Alta
     High = 1,
     /// Normal
+    #[default]
     Normal = 2,
     /// Baixa
     Low = 3,
 }
 
-impl Default for JobPriority {
-    fn default() -> Self {
-        JobPriority::Normal
-    }
-}
 
 impl fmt::Display for JobPriority {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -9,7 +9,6 @@ use robotrade_trading_worker::{
     sync_engine::SyncDataType,
     ws_manager::Exchange,
 };
-use rust_decimal::Decimal;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info};

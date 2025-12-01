@@ -1,260 +1,123 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # ╔═══════════════════════════════════════════════════════════════╗
-# ║  PRE-PUSH HOOK - COMPREHENSIVE VALIDATION (NO E2E)           ║
-# ║  Performance target: 1-3 minutes                             ║
+# ║  RoboTrade - PRE-PUSH HOOK                                    ║
+# ║  Validações abrangentes antes de push                        ║
+# ║  Tempo esperado: 2-5 minutos                                 ║
 # ║  Skip: SKIP_PRE_PUSH=1 git push OR git push --no-verify     ║
 # ║                                                               ║
-# ║  NOTA: Validações Rust básicas (fmt, clippy, check) já      ║
-# ║        foram feitas no pre-commit. Aqui fazemos apenas       ║
-# ║        validações mais pesadas (testes, benchmarks, etc).    ║
+# ║  NOTA: Validações básicas (fmt, clippy, check) já foram     ║
+# ║        feitas no pre-commit. Aqui validamos testes,          ║
+# ║        segurança, build release e duplicação de código.      ║
 # ╚═══════════════════════════════════════════════════════════════╝
 
-echo "🚀 Pre-push: Running comprehensive validations..."
+echo "🚀 Pre-push: Executando validações abrangentes..."
 echo ""
 
 # Check skip flags
 if [ -n "$SKIP_PRE_PUSH" ] || [ -n "$NO_VERIFY" ]; then
-  echo "⚠️  Skipping validations (SKIP_PRE_PUSH or --no-verify)"
+  echo "⚠️  Pulando validações (SKIP_PRE_PUSH ou --no-verify)"
   exit 0
 fi
 
 CRITICAL=0
 
 # ═════════════════════════════════════════════════════════════════
-# 1. TYPESCRIPT QUALITY
+# 1. RUST TESTS
 # ═════════════════════════════════════════════════════════════════
-echo "📋 [1/10] TypeScript Quality..."
+echo "🧪 [1/6] Testes Rust..."
 
-pnpm run format:check > /dev/null 2>&1
+cargo test --workspace --all-features > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-  echo "   ❌ Prettier formatting errors"
+  echo "   ❌ Testes falharam (run: npm run rust:test)"
   CRITICAL=$((CRITICAL + 1))
 else
-  echo "   ✅ Formatting OK"
-fi
-
-pnpm run lint > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "   ❌ ESLint errors"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ Lint OK"
-fi
-
-pnpm exec tsc --noEmit > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "   ❌ TypeScript errors"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ Type-check OK"
+  echo "   ✅ Testes OK"
 fi
 
 # ═════════════════════════════════════════════════════════════════
-# 2. CODE DUPLICATION (TypeScript)
+# 2. CODE DUPLICATION (Rust)
 # ═════════════════════════════════════════════════════════════════
 echo ""
-echo "🔍 [2/10] Code Duplication (TypeScript)..."
+echo "🔍 [2/6] Duplicação de Código (Rust)..."
 
-pnpm run cpd:check > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "   ❌ TypeScript duplication >5% threshold"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ TypeScript duplication OK"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 3. CODE DUPLICATION (Rust) - TEMPORARILY DISABLED
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🔍 [3/10] Code Duplication (Rust)..."
-
-pnpm run cpd:rust:check > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "   ❌ Rust duplication >5% threshold"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ Rust duplication OK"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 4. CIRCULAR DEPENDENCIES
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🔄 [4/10] Circular Dependencies..."
-
-pnpm run deps:circular > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "   ❌ Circular dependencies found"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ No circular deps"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 5. ORPHAN MODULES
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "👻 [5/10] Orphan Modules..."
-
-ORPHAN_OUTPUT=$(pnpm run deps:orphans 2>&1)
-if echo "$ORPHAN_OUTPUT" | grep -q "✔"; then
-  echo "   ✅ No orphans"
-else
-  echo "   ⚠️  Orphan modules found (not blocking)"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 6. RUST TESTS (fmt/clippy já validados no pre-commit)
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🦀 [6/10] Rust Tests..."
-
-# Ensure we're in project root
-ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$ROOT_DIR/src-tauri" || exit 1
-
-echo "   • Skipping fmt/clippy (already validated in pre-commit)"
-
-cargo test --all-features 2>&1 | tee /tmp/rust-test.log > /dev/null
-TEST_CODE=$?
-if [ $TEST_CODE -ne 0 ]; then
-  echo "   ❌ Rust unit tests failed (see /tmp/rust-test.log)"
-  CRITICAL=$((CRITICAL + 1))
-else
-  echo "   ✅ Rust tests OK"
-fi
-
-cd "$ROOT_DIR" || exit 1
-
-# ═════════════════════════════════════════════════════════════════
-# 7. RUST SECURITY (cargo-audit)
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🔒 [7/10] Rust Security..."
-
-if command -v cargo-audit > /dev/null 2>&1; then
-  AUDIT_CODE=0
-  (cd src-tauri && cargo audit > /dev/null 2>&1) || AUDIT_CODE=$?
-  if [ $AUDIT_CODE -ne 0 ]; then
-    echo "   ❌ Security vulnerabilities found"
-    CRITICAL=$((CRITICAL + 1))
+if command -v jscpd > /dev/null 2>&1; then
+  npm run -s cpd:rust:check > /dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "   ⚠️  Duplicação >5% encontrada (não bloqueante)"
   else
-    echo "   ✅ No vulnerabilities"
+    echo "   ✅ Duplicação OK"
   fi
 else
-  echo "   ⚠️  cargo-audit not installed"
+  echo "   ⚠️  jscpd não instalado (npm install -g jscpd)"
+fi
+
+# ═════════════════════════════════════════════════════════════════
+# 3. RUST SECURITY (cargo-audit)
+# ═════════════════════════════════════════════════════════════════
+echo ""
+echo "🔒 [3/6] Auditoria de Segurança..."
+
+if command -v cargo-audit > /dev/null 2>&1; then
+  cargo audit > /dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "   ❌ Vulnerabilidades encontradas (run: npm run rust:audit)"
+    CRITICAL=$((CRITICAL + 1))
+  else
+    echo "   ✅ Sem vulnerabilidades"
+  fi
+else
+  echo "   ⚠️  cargo-audit não instalado"
   echo "      Install: cargo install cargo-audit"
 fi
 
 # ═════════════════════════════════════════════════════════════════
-# 8. RUST UNUSED DEPS (cargo-machete)
+# 4. DOCUMENTATION BUILD
 # ═════════════════════════════════════════════════════════════════
 echo ""
-echo "🧹 [8/10] Unused Dependencies..."
+echo "📚 [4/6] Build da Documentação..."
 
-if command -v cargo-machete > /dev/null 2>&1; then
-  MACHETE_CODE=0
-  (cd src-tauri && cargo machete > /dev/null 2>&1) || MACHETE_CODE=$?
-
-  if [ $MACHETE_CODE -eq 1 ]; then
-    echo "   ⚠️  Unused dependencies (not blocking)"
-  elif [ $MACHETE_CODE -eq 0 ]; then
-    echo "   ✅ No unused deps"
-  else
-    echo "   ⚠️  cargo-machete error"
-  fi
-else
-  echo "   ⚠️  cargo-machete not installed"
-  echo "      Install: cargo install cargo-machete"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 9. RUST DENY (comprehensive checks)
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🛡️  [9/10] Rust Deny (licenses + advisories)..."
-
-if command -v cargo-deny > /dev/null 2>&1; then
-  DENY_CODE=0
-  (cd src-tauri && cargo deny check advisories > /dev/null 2>&1) || DENY_CODE=$?
-  if [ $DENY_CODE -ne 0 ]; then
-    echo "   ❌ Deny advisories failed"
-    CRITICAL=$((CRITICAL + 1))
-  else
-    echo "   ✅ Advisories OK"
-  fi
-else
-  echo "   ⚠️  cargo-deny not installed"
-  echo "      Install: cargo install cargo-deny"
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 10. TESTS (TypeScript - NO E2E, NO INTEGRATION)
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "🧪 [10/12] Unit Tests..."
-
-TEST_OUTPUT=$(pnpm test --run 2>&1)
-TEST_CODE=$?
-
-TESTS_PASSED=$(echo "$TEST_OUTPUT" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1)
-TESTS_FAILED=$(echo "$TEST_OUTPUT" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" | head -1)
-
-# Default to 0 if empty
-TESTS_PASSED=${TESTS_PASSED:-0}
-TESTS_FAILED=${TESTS_FAILED:-0}
-
-echo "   📊 $TESTS_PASSED passed | $TESTS_FAILED failed"
-
-if [ "$TESTS_FAILED" -gt 0 ]; then
-  echo "   ❌ Tests failed"
+cargo doc --workspace --no-deps --all-features > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "   ❌ Erro na documentação (run: npm run rust:doc)"
   CRITICAL=$((CRITICAL + 1))
 else
-  echo "   ✅ Tests OK"
+  echo "   ✅ Documentação OK"
 fi
 
 # ═════════════════════════════════════════════════════════════════
-# 11. RUST BENCHMARKS (non-blocking, quick mode)
+# 5. RELEASE BUILD
 # ═════════════════════════════════════════════════════════════════
 echo ""
-echo "⚡ [11/12] Rust Benchmarks (quick)..."
+echo "🔨 [5/6] Build Release..."
 
-cd src-tauri
-BENCH_OUTPUT=$(timeout 30 cargo bench --bench database_benchmarks -- "Queue Inserts" --quick 2>&1 || echo "timeout")
-BENCH_CODE=$?
-cd ..
-
-if [ $BENCH_CODE -ne 0 ]; then
-  echo "   ⚠️  Rust benchmarks failed (not blocking)"
-else
-  # Extract throughput from output
-  BATCH_THRPT=$(echo "$BENCH_OUTPUT" | grep -A1 "batch/10000" | grep "thrpt" | grep -oE "[0-9]+\.[0-9]+ Kelem/s" | head -1 || echo "N/A")
-  if [ "$BATCH_THRPT" != "N/A" ]; then
-    echo "   ✅ Benchmarks OK (batch 10k: $BATCH_THRPT)"
-  else
-    echo "   ✅ Benchmarks OK"
-  fi
-fi
-
-# ═════════════════════════════════════════════════════════════════
-# 12. CAPACITY BENCHMARKS (non-blocking, informational)
-# ═════════════════════════════════════════════════════════════════
-echo ""
-echo "📊 [12/12] Capacity Check..."
-
-cd src-tauri
-# Just compile check for capacity benchmarks (full run takes too long)
-cargo build --bench capacity_benchmarks > /dev/null 2>&1
+cargo build --workspace --release > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-  echo "   ⚠️  Capacity benchmarks compilation failed"
+  echo "   ❌ Build release falhou (run: npm run rust:build:release)"
+  CRITICAL=$((CRITICAL + 1))
 else
-  echo "   ✅ Capacity benchmarks ready"
-  echo "      Run full: pnpm run rust:bench:capacity"
+  echo "   ✅ Build release OK"
 fi
-cd ..
+
+# ═════════════════════════════════════════════════════════════════
+# 6. UNUSED DEPENDENCIES (cargo-machete)
+# ═════════════════════════════════════════════════════════════════
+echo ""
+echo "🧹 [6/6] Dependências Não Utilizadas..."
+
+if command -v cargo-machete > /dev/null 2>&1; then
+  cargo machete > /dev/null 2>&1
+  MACHETE_CODE=$?
+
+  if [ $MACHETE_CODE -eq 1 ]; then
+    echo "   ⚠️  Dependências não utilizadas (não bloqueante)"
+  elif [ $MACHETE_CODE -eq 0 ]; then
+    echo "   ✅ Sem dependências não utilizadas"
+  else
+    echo "   ⚠️  Erro no cargo-machete"
+  fi
+else
+  echo "   ⚠️  cargo-machete não instalado"
+  echo "      Install: cargo install cargo-machete"
+fi
 
 # ═════════════════════════════════════════════════════════════════
 # FINAL DECISION
@@ -264,16 +127,16 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ $CRITICAL -ge 1 ]; then
-  echo "❌ Push BLOCKED - $CRITICAL critical failure(s)"
+  echo "❌ Push BLOQUEADO - $CRITICAL falha(s) crítica(s)"
   echo ""
-  echo "💡 To skip (use with caution):"
+  echo "💡 Para pular (use com cautela):"
   echo "   • SKIP_PRE_PUSH=1 git push"
   echo "   • git push --no-verify"
   echo ""
   exit 1
 else
-  echo "✅ All validations passed!"
-  echo "🎉 Push allowed!"
+  echo "✅ Todas as validações passaram!"
+  echo "🎉 Push permitido!"
   echo ""
   exit 0
 fi

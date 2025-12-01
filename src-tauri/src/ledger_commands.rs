@@ -16,7 +16,7 @@ use robotrade_trading_worker::{
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::commands::CommandError;
 use crate::state::AppState;

@@ -448,23 +448,19 @@ impl TryFrom<SyncStateRow> for SyncState {
 
         let last_sync_timestamp = row
             .last_sync_timestamp
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let sync_start_time = row
             .sync_start_time
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let sync_end_time = row
             .sync_end_time
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let last_success_at = row
             .last_success_at
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let updated_at = Utc.timestamp_opt(row.updated_at, 0).single().ok_or_else(|| {
             InfraError::Database("updated_at inválido".to_string())

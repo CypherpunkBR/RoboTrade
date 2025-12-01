@@ -112,8 +112,7 @@ impl ExchangeRepository for SqliteExchangeRepository {
         debug!(exchange_id = %exchange.id, "Salvando exchange");
 
         let metadata_json = exchange.metadata.as_ref()
-            .map(|m| serde_json::to_string(m).ok())
-            .flatten();
+            .and_then(|m| serde_json::to_string(m).ok());
 
         let supported_features_json = serde_json::to_string(&exchange.supported_features).ok();
 

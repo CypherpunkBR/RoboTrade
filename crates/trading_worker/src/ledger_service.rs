@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use super::sync_engine::{SyncedDeposit, SyncedFunding, SyncedTrade, SyncedWithdrawal};

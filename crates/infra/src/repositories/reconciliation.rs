@@ -237,7 +237,7 @@ impl ReconciliationRepository for SqliteReconciliationRepository {
 
         let snapshots: Result<Vec<_>, _> = rows
             .into_iter()
-            .map(|r| Self::row_to_snapshot(r))
+            .map(Self::row_to_snapshot)
             .collect();
         snapshots
     }
@@ -263,7 +263,7 @@ impl ReconciliationRepository for SqliteReconciliationRepository {
 
         let snapshots: Result<Vec<_>, _> = rows
             .into_iter()
-            .map(|r| Self::row_to_snapshot(r))
+            .map(Self::row_to_snapshot)
             .collect();
         snapshots
     }
@@ -289,7 +289,7 @@ impl ReconciliationRepository for SqliteReconciliationRepository {
 
         let snapshots: Result<Vec<_>, _> = rows
             .into_iter()
-            .map(|r| Self::row_to_snapshot(r))
+            .map(Self::row_to_snapshot)
             .collect();
         snapshots
     }
@@ -382,8 +382,7 @@ impl SqliteReconciliationRepository {
 
         let reviewed_at = row
             .reviewed_at
-            .map(|ts| Utc.timestamp_opt(ts, 0).single())
-            .flatten();
+            .and_then(|ts| Utc.timestamp_opt(ts, 0).single());
 
         let snapshot_timestamp = Utc
             .timestamp_opt(row.snapshot_timestamp, 0)

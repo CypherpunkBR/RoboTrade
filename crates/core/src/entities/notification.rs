@@ -281,8 +281,10 @@ impl AlertDefinition {
 /// Severidade da notificação
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum NotificationSeverity {
     /// Informativo
+    #[default]
     Info,
     /// Sucesso
     Success,
@@ -294,11 +296,6 @@ pub enum NotificationSeverity {
     Critical,
 }
 
-impl Default for NotificationSeverity {
-    fn default() -> Self {
-        NotificationSeverity::Info
-    }
-}
 
 impl fmt::Display for NotificationSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

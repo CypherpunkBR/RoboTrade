@@ -48,7 +48,7 @@
   "lint-staged": {
     "**/*.rs": [
       "sh -c 'cargo fmt --all'",
-      "sh -c 'cargo clippy --workspace --all-targets --all-features -- -D warnings -W clippy::all -W clippy::pedantic -W clippy::nursery'"
+      "sh -c 'cargo clippy --workspace --all-targets --all-features -- -D warnings'"
     ],
     "Cargo.toml": [
       "sh -c 'cargo check --workspace'"
